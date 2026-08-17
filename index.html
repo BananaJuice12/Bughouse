@@ -1,1108 +1,527 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<meta name="theme-color" content="#0b1017">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0">
+<title>Bughouse Arena</title>
 
-<title>Bughouse</title>
-
-<!--
-  External libraries are loaded over HTTPS.
-
-  PeerJS:
-  Provides WebRTC peer-to-peer connections and free signaling.
-
-  chess.js:
-  Provides standard chess move legality/check/checkmate handling.
--->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/peerjs/1.5.5/peerjs.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/chess.js/1.4.0/chess.min.js"></script>
 
 <style>
-*{
-  box-sizing:border-box;
-}
-
+*{box-sizing:border-box}
 :root{
-  --bg:#080c12;
-  --panel:#121923;
-  --panel2:#182230;
-  --border:#2b3848;
-  --text:#f5f7fa;
-  --muted:#94a1b1;
-  --blue:#4c9cff;
-  --blue2:#2878d8;
-  --red:#ff6478;
-  --green:#46df93;
-  --yellow:#ffd34d;
-
+  --bg:#0d1117;
+  --panel:#161b22;
+  --panel2:#21262d;
+  --border:#30363d;
+  --text:#f0f6fc;
+  --muted:#8b949e;
+  --green:#238636;
+  --blue:#1f6feb;
+  --red:#da3633;
+  --gold:#d29922;
   --light:#f0d9b5;
   --dark:#b58863;
 }
-
-html,
 body{
   margin:0;
-  min-height:100%;
-  background:
-    radial-gradient(
-      circle at top,
-      #223249 0,
-      #080c12 55%
-    );
+  background:radial-gradient(circle at top,#182230 0,#0d1117 55%);
   color:var(--text);
-  font-family:
-    system-ui,
-    -apple-system,
-    BlinkMacSystemFont,
-    "Segoe UI",
-    sans-serif;
-}
-
-body{
+  font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
   min-height:100vh;
 }
-
-button,
-input,
-select{
-  font:inherit;
-}
-
+button,input,select{font:inherit}
 button{
   cursor:pointer;
+  border:0;
+  border-radius:8px;
+  padding:10px 15px;
+  color:white;
+  background:var(--blue);
+  font-weight:700;
 }
-
-button:disabled{
-  cursor:not-allowed;
-  opacity:.45;
+button:hover{filter:brightness(1.12)}
+button:disabled{opacity:.45;cursor:not-allowed}
+input,select{
+  background:#0d1117;
+  color:var(--text);
+  border:1px solid var(--border);
+  border-radius:8px;
+  padding:11px;
+  outline:none;
 }
-
-.hidden{
-  display:none!important;
-}
-
-.app{
-  width:min(1500px,100%);
-  margin:auto;
-  padding:18px;
-}
+input:focus,select:focus{border-color:var(--blue)}
+.hidden{display:none!important}
 
 header{
-  display:flex;
-  align-items:center;
-  justify-content:space-between;
-  gap:15px;
-  margin-bottom:18px;
+  padding:18px 25px;
+  border-bottom:1px solid var(--border);
+  background:rgba(13,17,23,.9);
+  position:sticky;
+  top:0;
+  z-index:20;
+  backdrop-filter:blur(10px);
 }
-
-.logo{
-  font-size:30px;
-  font-weight:950;
-  letter-spacing:-1px;
+header h1{
+  margin:0;
+  font-size:24px;
 }
+header span{color:#58a6ff}
 
-.logo span{
-  color:var(--blue);
-}
-
-.status{
-  color:var(--muted);
-  font-size:13px;
+.screen{
+  max-width:1500px;
+  margin:auto;
+  padding:25px;
 }
 
 .card{
-  background:rgba(18,25,35,.97);
+  background:rgba(22,27,34,.95);
   border:1px solid var(--border);
-  border-radius:16px;
-  box-shadow:0 18px 60px #0007;
+  border-radius:14px;
+  padding:22px;
+  box-shadow:0 12px 40px rgba(0,0,0,.25);
 }
 
-/* HOME */
-
-#home{
-  width:min(600px,100%);
-  margin:7vh auto;
-  padding:32px;
+.home{
+  max-width:600px;
+  margin:80px auto;
+  text-align:center;
 }
-
-#home h1{
-  margin:0;
-  font-size:46px;
-  line-height:1;
-}
-
-#home h1 span{
-  color:var(--blue);
-}
-
-#home .subtitle{
-  color:var(--muted);
-  line-height:1.6;
-  margin:18px 0 28px;
-}
-
-.field{
-  margin:18px 0;
-}
-
-label{
-  display:block;
-  color:var(--muted);
-  font-size:13px;
-  margin-bottom:7px;
-}
-
-input,
-select{
+.home h2{font-size:40px;margin:5px 0 10px}
+.home p{color:var(--muted)}
+.formrow{display:flex;gap:10px;margin:15px 0}
+.formrow>*{flex:1}
+.bigbtn{
   width:100%;
-  padding:13px 14px;
-  color:white;
-  background:#0b1118;
-  border:1px solid #354354;
-  border-radius:10px;
-  outline:none;
-}
-
-input:focus,
-select:focus{
-  border-color:var(--blue);
-  box-shadow:0 0 0 3px #4c9cff18;
-}
-
-.primary{
-  width:100%;
-  border:0;
-  border-radius:10px;
+  font-size:18px;
   padding:14px;
-  color:white;
-  font-weight:850;
-  background:
-    linear-gradient(
-      135deg,
-      var(--blue),
-      #6757df
-    );
+  margin-top:8px;
 }
 
-.secondary{
-  border:1px solid #3b495b;
-  background:#202b39;
-  color:white;
-  border-radius:9px;
-  padding:10px 14px;
-}
-
-.error{
-  min-height:20px;
-  color:#ff8495;
-  font-size:13px;
-  margin-top:10px;
-}
-
-.small{
-  color:var(--muted);
-  font-size:12px;
-  line-height:1.5;
-}
-
-.notice{
-  padding:12px;
-  background:#0e1c2c;
-  border:1px solid #264a70;
-  color:#b7d7ff;
-  border-radius:10px;
-  font-size:13px;
-  line-height:1.5;
-}
-
-/* LOBBY */
-
-#lobby{
-  padding:20px;
-}
-
-.lobbyGrid{
+#lobbyScreen{max-width:950px}
+.lobby-grid{
   display:grid;
-  grid-template-columns:minmax(0,1.5fr) minmax(260px,.7fr);
+  grid-template-columns:1fr 1fr;
   gap:20px;
 }
-
-@media(max-width:850px){
-  .lobbyGrid{
-    grid-template-columns:1fr;
-  }
-}
-
-.roomLink{
+.room-link{
   display:flex;
   gap:8px;
-  margin:15px 0;
 }
+.room-link input{flex:1}
 
-.roomLink input{
-  min-width:0;
-}
-
-.players{
+.seats{
   display:grid;
-  gap:8px;
-  margin-top:15px;
-}
-
-.playerRow{
-  display:grid;
-  grid-template-columns:minmax(0,1fr) 170px;
-  align-items:center;
+  grid-template-columns:1fr 1fr;
   gap:10px;
-  padding:11px;
-  background:#0d141d;
-  border:1px solid var(--border);
-  border-radius:10px;
 }
-
-.playerSeat{
-  display:flex;
-  align-items:center;
-  gap:10px;
-  min-width:0;
-}
-
 .seat{
-  flex:0 0 36px;
-  width:36px;
-  height:36px;
+  border:1px solid var(--border);
+  background:var(--panel2);
+  border-radius:10px;
+  padding:13px;
+}
+.seat .role{font-weight:800}
+.seat .name{color:#58a6ff;margin-top:4px}
+.seat.empty .name{color:var(--muted)}
+.team1{border-left:4px solid #58a6ff}
+.team2{border-left:4px solid #f85149}
+
+#gameScreen{
+  max-width:1500px;
+}
+.game-layout{
   display:grid;
-  place-items:center;
-  border-radius:8px;
-  background:#273342;
-  font-weight:900;
-}
-
-.teamA{
-  color:#67b0ff;
-}
-
-.teamB{
-  color:#ff8192;
-}
-
-/* GAME */
-
-.gameLayout{
-  display:grid;
-  grid-template-columns:minmax(0,1fr) 330px;
+  grid-template-columns:minmax(500px,1fr) 350px;
   gap:18px;
 }
-
-@media(max-width:1100px){
-  .gameLayout{
-    grid-template-columns:1fr;
-  }
-}
-
 .boards{
   display:grid;
-  grid-template-columns:repeat(2,minmax(280px,1fr));
-  gap:18px;
+  grid-template-columns:1fr 1fr;
+  gap:20px;
 }
-
-@media(max-width:760px){
-  .boards{
-    grid-template-columns:1fr;
-  }
-}
-
-.boardPanel{
-  padding:12px;
+.board-card{
   background:var(--panel);
   border:1px solid var(--border);
-  border-radius:15px;
+  border-radius:14px;
+  padding:14px;
 }
-
-.boardHeader{
+.board-title{
   display:flex;
-  align-items:center;
   justify-content:space-between;
-  gap:10px;
-  margin-bottom:9px;
+  align-items:center;
+  margin-bottom:10px;
 }
-
-.boardTitle{
-  font-weight:900;
+.board-title h3{margin:0}
+.turn-dot{
+  width:11px;height:11px;border-radius:50%;
+  display:inline-block;margin-right:6px;
+  background:#777;
 }
-
-.turn{
-  color:var(--muted);
-  font-size:12px;
-  margin-top:3px;
-}
-
-.clock{
-  min-width:80px;
-  padding:6px 9px;
-  border-radius:8px;
-  background:#06090d;
-  text-align:center;
-  font-size:25px;
-  font-weight:950;
-}
-
-.clock.active{
-  color:var(--green);
-}
-
-.clock.low{
-  color:var(--red);
-}
+.turn-dot.on{background:#3fb950;box-shadow:0 0 10px #3fb950}
 
 .board{
   width:100%;
+  max-width:580px;
   aspect-ratio:1;
   display:grid;
   grid-template-columns:repeat(8,1fr);
+  border-radius:5px;
   overflow:hidden;
-  border-radius:9px;
+  margin:auto;
+  box-shadow:0 10px 30px rgba(0,0,0,.35);
   user-select:none;
 }
-
 .square{
   position:relative;
-  display:grid;
-  place-items:center;
-  font-size:clamp(30px,5vw,58px);
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  font-size:clamp(27px,5vw,62px);
+  line-height:1;
   cursor:pointer;
 }
-
-.light{
-  background:var(--light);
-}
-
-.dark{
-  background:var(--dark);
-}
-
+.square.light{background:var(--light)}
+.square.dark{background:var(--dark)}
 .square.selected{
-  box-shadow:
-    inset 0 0 0 5px var(--yellow);
+  box-shadow:inset 0 0 0 5px rgba(255,215,0,.8);
 }
-
-.square.legal::after{
+.square.target::after{
   content:"";
-  position:absolute;
-  width:23%;
-  height:23%;
+  width:22%;
+  height:22%;
   border-radius:50%;
-  background:#36c65eaa;
+  background:rgba(0,0,0,.25);
+  position:absolute;
 }
-
 .square.capture::after{
   content:"";
-  position:absolute;
-  width:72%;
-  height:72%;
+  width:78%;
+  height:78%;
   border-radius:50%;
-  border:5px solid #df455baa;
+  border:5px solid rgba(200,30,30,.55);
+  position:absolute;
 }
-
-.square.check{
-  background:#d44f4f!important;
-}
-
 .piece{
   position:relative;
   z-index:2;
-  line-height:1;
+  font-family:"DejaVu Sans","Noto Sans Symbols 2",serif;
+  text-shadow:0 2px 2px rgba(0,0,0,.3);
 }
+.whitepiece{color:#fff}
+.blackpiece{color:#111}
 
-.whitePiece{
-  color:#fff;
-  text-shadow:
-    0 1px 0 #111,
-    1px 0 #111,
-    -1px 0 #111,
-    0 -1px #111;
-}
-
-.blackPiece{
-  color:#111;
-}
-
-.coord{
-  position:absolute;
-  z-index:3;
-  font-size:9px;
-  font-weight:900;
-  opacity:.6;
-}
-
-.coord.rank{
-  top:2px;
-  left:3px;
-}
-
-.coord.file{
-  right:3px;
-  bottom:2px;
-}
-
-/* HAND */
-
-.hand{
-  min-height:53px;
+.pocket{
+  min-height:42px;
   display:flex;
   align-items:center;
+  gap:4px;
+  padding:5px 0;
   flex-wrap:wrap;
-  gap:5px;
-  margin-top:8px;
-  padding:6px;
-  background:#0b1118;
-  border-radius:8px;
 }
-
-.handTitle{
-  margin-right:4px;
-  color:var(--muted);
-  font-size:11px;
-}
-
-.handPiece{
-  min-width:43px;
-  height:40px;
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  gap:2px;
-  border:1px solid #3a4859;
-  border-radius:8px;
-  background:#1d2835;
-}
-
-.handPiece.selected{
-  outline:3px solid var(--yellow);
-}
-
-.mini{
+.pocket-piece{
+  border:1px solid var(--border);
+  background:#0d1117;
+  border-radius:7px;
+  min-width:38px;
+  height:38px;
+  padding:2px 5px;
   font-size:27px;
+  cursor:pointer;
+  position:relative;
+}
+.pocket-piece.selected{
+  outline:3px solid #d29922;
+}
+.pocket-count{
+  position:absolute;
+  right:1px;
+  bottom:0;
+  background:#111;
+  color:white;
+  font-size:11px;
+  border-radius:5px;
+  padding:0 3px;
 }
 
-.count{
-  color:var(--yellow);
-  font-size:12px;
-  font-weight:950;
+.clock{
+  font-variant-numeric:tabular-nums;
+  font-size:24px;
+  font-weight:900;
+  background:#090c10;
+  padding:5px 10px;
+  border-radius:7px;
 }
-
-/* SIDEBAR */
+.clock.low{color:#ff7b72}
+.clock.active{box-shadow:0 0 0 2px #3fb950}
 
 .sidebar{
   display:flex;
   flex-direction:column;
-  gap:14px;
+  gap:15px;
 }
-
-.sideCard{
+.side-card{
+  background:var(--panel);
+  border:1px solid var(--border);
+  border-radius:14px;
   padding:15px;
 }
-
-.sideTitle{
-  margin-bottom:10px;
-  font-weight:900;
-}
-
-.gamePlayers{
+.side-card h3{margin:0 0 10px}
+.player-list{
   display:grid;
-  gap:7px;
-}
-
-.gamePlayer{
-  display:flex;
-  align-items:center;
-  justify-content:space-between;
   gap:6px;
-  padding:9px;
-  background:#0d141d;
-  border:1px solid var(--border);
-  border-radius:8px;
-  font-size:12px;
 }
-
-.gamePlayer.me{
-  border-color:var(--blue);
+.player{
+  display:flex;
+  justify-content:space-between;
+  padding:8px;
+  border-radius:7px;
+  background:#0d1117;
 }
-
 .chat{
-  height:430px;
+  height:390px;
   display:flex;
   flex-direction:column;
 }
-
-.chatMessages{
+.chat-messages{
   flex:1;
-  min-height:0;
-  overflow:auto;
-  padding:9px;
-  background:#0b1118;
-  border-radius:9px;
+  overflow-y:auto;
+  background:#0d1117;
+  border-radius:8px;
+  padding:8px;
 }
-
-.message{
-  margin-bottom:10px;
-  word-break:break-word;
+.msg{
+  margin-bottom:8px;
+  word-wrap:break-word;
 }
-
-.messageName{
-  color:var(--blue);
-  font-size:12px;
-  font-weight:900;
-}
-
-.messageTime{
-  color:#687583;
-  font-size:10px;
-}
-
-.chatForm{
+.msg b{color:#58a6ff}
+.msg.system b{color:#d29922}
+.chat-input{
   display:flex;
-  gap:7px;
+  gap:6px;
   margin-top:8px;
 }
+.chat-input input{flex:1}
 
-.chatForm input{
-  min-width:0;
+.status{
+  color:var(--muted);
+  font-size:14px;
 }
+.success{color:#3fb950}
+.error{color:#ff7b72}
+.warning{color:#d29922}
 
-.chatForm button{
-  width:54px;
-}
-
-/* GAME OVER */
-
-#gameOver{
+.promo{
   position:fixed;
   inset:0;
-  z-index:50;
-  display:none;
-  place-items:center;
-  background:#000b;
-  backdrop-filter:blur(5px);
-}
-
-.gameOverBox{
-  width:min(450px,90%);
-  padding:30px;
-  text-align:center;
-  background:var(--panel);
-  border:1px solid #465365;
-  border-radius:16px;
-}
-
-.gameOverBox h2{
-  margin:0 0 10px;
-  font-size:32px;
-}
-
-#toast{
-  position:fixed;
-  left:50%;
-  bottom:20px;
+  background:rgba(0,0,0,.75);
   z-index:100;
-  display:none;
-  transform:translateX(-50%);
-  padding:11px 17px;
-  background:#273443;
-  border:1px solid #48576a;
-  border-radius:9px;
-  box-shadow:0 10px 30px #0008;
+  display:flex;
+  justify-content:center;
+  align-items:center;
+}
+.promo-box{
+  background:var(--panel);
+  border:1px solid var(--border);
+  padding:25px;
+  border-radius:15px;
+  text-align:center;
+}
+.promo-buttons{
+  display:flex;
+  gap:10px;
+  margin-top:15px;
+}
+.promo-buttons button{
+  font-size:28px;
+  width:60px;
+  height:60px;
+}
+
+.notice{
+  margin:10px 0;
+  padding:10px;
+  border-radius:8px;
+  background:#1c2128;
+  border:1px solid var(--border);
+}
+
+@media(max-width:1000px){
+  .game-layout{grid-template-columns:1fr}
+  .boards{grid-template-columns:1fr}
+}
+@media(max-width:700px){
+  .screen{padding:10px}
+  .lobby-grid{grid-template-columns:1fr}
+  .seats{grid-template-columns:1fr}
+  .home{margin:35px auto}
+  .home h2{font-size:32px}
 }
 </style>
 </head>
 
 <body>
 
-<div class="app">
-
 <header>
-  <div class="logo">
-    BUG<span>HOUSE</span>
-  </div>
-
-  <div class="status" id="status">
-    Ready
-  </div>
+  <h1>♟ <span>Bughouse Arena</span></h1>
 </header>
 
+<!-- HOME -->
+<section id="homeScreen" class="screen">
+  <div class="card home">
+    <h2>Bughouse</h2>
+    <p>Four players. Two boards. One chaotic battle.</p>
 
-<!-- =========================
-     HOME
-========================= -->
+    <input id="username" maxlength="20" placeholder="Choose your username">
 
-<section id="home" class="card">
+    <div class="formrow">
+      <select id="timeControl">
+        <option value="120">2 + 0</option>
+        <option value="180">3 + 0</option>
+        <option value="300">5 + 0</option>
+      </select>
+    </div>
 
-  <h1>
-    Bug<span>house</span>
-  </h1>
+    <button id="createBtn" class="bigbtn">Create Room</button>
 
-  <p class="subtitle">
-    Four players. Two boards. Captured pieces are
-    passed to your teammate.
-  </p>
+    <div id="joinNotice" class="notice hidden">
+      You have been invited to a room.
+    </div>
 
-  <div class="field">
+    <button id="joinBtn" class="bigbtn hidden">Join Room</button>
 
-    <label for="username">
-      Username
-    </label>
-
-    <input
-      id="username"
-      maxlength="20"
-      autocomplete="off"
-      placeholder="Choose a username"
-    >
-
+    <p id="connectionStatus" class="status"></p>
   </div>
-
-
-  <div class="field">
-
-    <label for="timeControl">
-      Time control
-    </label>
-
-    <select id="timeControl">
-
-      <option value="120">
-        2 + 0
-      </option>
-
-      <option value="180">
-        3 + 0
-      </option>
-
-      <option value="300">
-        5 + 0
-      </option>
-
-    </select>
-
-  </div>
-
-
-  <button
-    id="homeButton"
-    class="primary"
-  >
-    Create room
-  </button>
-
-
-  <div
-    id="homeError"
-    class="error"
-  ></div>
-
-
-  <p class="small">
-    No player account is required.
-    Choose a username, create or join a room,
-    and play.
-  </p>
-
 </section>
 
+<!-- LOBBY -->
+<section id="lobbyScreen" class="screen hidden">
+  <div class="card">
+    <h2>Room Lobby</h2>
 
-<!-- =========================
-     LOBBY
-========================= -->
+    <div class="notice">
+      <b>Share this link with your 3 friends:</b>
+      <div class="room-link">
+        <input id="shareLink" readonly>
+        <button id="copyLink">Copy</button>
+      </div>
+    </div>
 
-<section
-  id="lobby"
-  class="card hidden"
->
+    <div class="lobby-grid">
 
-  <div class="lobbyGrid">
+      <div>
+        <h3>Players</h3>
+        <div id="seats" class="seats"></div>
+      </div>
 
-    <div>
+      <div>
+        <h3>Host controls</h3>
 
-      <h2 style="margin-top:0">
-        Game lobby
-      </h2>
+        <div class="formrow">
+          <label>
+            Time:
+            <select id="lobbyTime">
+              <option value="120">2 + 0</option>
+              <option value="180">3 + 0</option>
+              <option value="300">5 + 0</option>
+            </select>
+          </label>
+        </div>
 
-      <div
-        class="small"
-        id="roomText"
-      ></div>
+        <div id="teamControls"></div>
 
-
-      <div class="roomLink">
-
-        <input
-          id="shareUrl"
-          readonly
-        >
-
-        <button
-          id="copyButton"
-          class="secondary"
-        >
-          Copy
+        <button id="startBtn" class="bigbtn" disabled>
+          Start Match
         </button>
 
+        <p id="lobbyStatus" class="status"></p>
       </div>
-
-
-      <div class="notice">
-
-        Send this link to your three friends.
-        The host chooses the teams and starts
-        the match.
-
-      </div>
-
-
-      <div
-        class="players"
-        id="lobbyPlayers"
-      ></div>
 
     </div>
-
-
-    <div>
-
-      <h3>
-        Match settings
-      </h3>
-
-
-      <div class="field">
-
-        <label for="lobbyTime">
-          Time control
-        </label>
-
-        <select id="lobbyTime">
-
-          <option value="120">
-            2 + 0
-          </option>
-
-          <option value="180">
-            3 + 0
-          </option>
-
-          <option value="300">
-            5 + 0
-          </option>
-
-        </select>
-
-      </div>
-
-
-      <button
-        id="startButton"
-        class="primary"
-      >
-        Start match
-      </button>
-
-
-      <div
-        id="lobbyError"
-        class="error"
-      ></div>
-
-    </div>
-
   </div>
-
 </section>
 
-
-<!-- =========================
-     GAME
-========================= -->
-
-<section
-  id="game"
-  class="hidden"
->
-
-  <div class="gameLayout">
-
+<!-- GAME -->
+<section id="gameScreen" class="screen hidden">
+  <div class="game-layout">
 
     <div class="boards">
 
-
       <!-- BOARD 1 -->
-
-      <div class="boardPanel">
-
-        <div class="boardHeader">
-
-          <div>
-
-            <div class="boardTitle">
-              Board 1
-            </div>
-
-            <div
-              class="turn"
-              id="turn0"
-            ></div>
-
-          </div>
-
-          <div
-            class="clock"
-            id="clock0"
-          >
-            2:00
-          </div>
-
+      <div class="board-card">
+        <div class="board-title">
+          <h3>Board 1</h3>
+          <span id="clock1label"></span>
         </div>
 
-
-        <div
-          class="board"
-          id="board0"
-        ></div>
-
-
-        <div
-          class="hand"
-          id="hand0"
-        >
-
-          <span class="handTitle">
-            Drops
-          </span>
-
-        </div>
-
+        <div id="pocket1top" class="pocket"></div>
+        <div id="board1" class="board"></div>
+        <div id="pocket1bottom" class="pocket"></div>
       </div>
-
 
       <!-- BOARD 2 -->
-
-      <div class="boardPanel">
-
-        <div class="boardHeader">
-
-          <div>
-
-            <div class="boardTitle">
-              Board 2
-            </div>
-
-            <div
-              class="turn"
-              id="turn1"
-            ></div>
-
-          </div>
-
-          <div
-            class="clock"
-            id="clock1"
-          >
-            2:00
-          </div>
-
+      <div class="board-card">
+        <div class="board-title">
+          <h3>Board 2</h3>
+          <span id="clock2label"></span>
         </div>
 
-
-        <div
-          class="board"
-          id="board1"
-        ></div>
-
-
-        <div
-          class="hand"
-          id="hand1"
-        >
-
-          <span class="handTitle">
-            Drops
-          </span>
-
-        </div>
-
+        <div id="pocket2top" class="pocket"></div>
+        <div id="board2" class="board"></div>
+        <div id="pocket2bottom" class="pocket"></div>
       </div>
-
 
     </div>
 
-
-    <!-- SIDEBAR -->
-
     <aside class="sidebar">
 
-
-      <div class="card sideCard">
-
-        <div class="sideTitle">
-          Players
-        </div>
-
-        <div
-          id="gamePlayers"
-          class="gamePlayers"
-        ></div>
-
+      <div class="side-card">
+        <h3>Players</h3>
+        <div id="gamePlayers" class="player-list"></div>
       </div>
 
+      <div class="side-card chat">
+        <h3>Chat</h3>
+        <div id="chatMessages" class="chat-messages"></div>
 
-      <div class="card sideCard">
-
-        <div class="sideTitle">
-          Chat
+        <div class="chat-input">
+          <input id="chatInput" maxlength="250" placeholder="Type a message...">
+          <button id="sendChat">Send</button>
         </div>
-
-
-        <div class="chat">
-
-          <div
-            id="chatMessages"
-            class="chatMessages"
-          ></div>
-
-
-          <form
-            id="chatForm"
-            class="chatForm"
-          >
-
-            <input
-              id="chatInput"
-              maxlength="250"
-              autocomplete="off"
-              placeholder="Chat..."
-            >
-
-            <button class="secondary">
-              ➤
-            </button>
-
-          </form>
-
-        </div>
-
       </div>
 
-
-      <div class="card sideCard">
-
-        <div class="sideTitle">
-          Match
-        </div>
-
-        <div
-          id="matchInfo"
-          class="small"
-        ></div>
-
+      <div class="side-card">
+        <div id="gameStatus" class="status">Waiting...</div>
       </div>
-
 
     </aside>
 
   </div>
-
 </section>
 
-</div>
-
-
-<!-- GAME OVER -->
-
-<div id="gameOver">
-
-  <div class="gameOverBox">
-
-    <h2 id="gameOverTitle">
-      Game over
-    </h2>
-
-    <p id="gameOverReason"></p>
-
-    <button
-      id="gameOverClose"
-      class="primary"
-    >
-      Close
-    </button>
-
+<!-- PROMOTION -->
+<div id="promotion" class="promo hidden">
+  <div class="promo-box">
+    <h2>Promote pawn</h2>
+    <div class="promo-buttons">
+      <button data-promo="q">♛</button>
+      <button data-promo="r">♜</button>
+      <button data-promo="b">♝</button>
+      <button data-promo="n">♞</button>
+    </div>
   </div>
-
 </div>
 
+<script type="module">
 
-<div id="toast"></div>
+import { Chess } from "https://cdn.jsdelivr.net/npm/chess.js@1.4.0/dist/esm/chess.js";
 
+/* =========================================================
+   BUGHOUSE ARENA
+   Single-file GitHub Pages version
+   ========================================================= */
 
-<script>
-"use strict";
-
-/*
-===============================================================
- BUGHOUSE
- Single-file client
-===============================================================
-
- NO LOGIN
- NO PLAYER ACCOUNT
- NO PAYMENT
-
- Architecture:
-
-   Browser A
-       |
-       | WebRTC
-       |
-   Browser B
-       |
-       | WebRTC
-       |
-   Browser C
-       |
-       | WebRTC
-       |
-   Browser D
-
- PeerJS Cloud is used only for signaling.
-
- The HOST is authoritative for:
-   - moves
-   - drops
-   - captured-piece transfer
-   - clocks
-   - lobby
-   - game result
-   - chat
-
- The clients cannot simply declare their own legal move.
-
-===============================================================
-*/
-
-
-/* ------------------------------------------------------------
-   CONSTANTS
------------------------------------------------------------- */
-
-const PIECES = [
-  "p",
-  "n",
-  "b",
-  "r",
-  "q"
-];
-
-const SYMBOL = {
+const PIECES = {
   p:"♟",
   n:"♞",
   b:"♝",
@@ -1111,3784 +530,1564 @@ const SYMBOL = {
   k:"♚"
 };
 
-
-/*
-  Fixed seats:
-
-  Seat 0 = Board 1 White
-  Seat 1 = Board 1 Black
-  Seat 2 = Board 2 White
-  Seat 3 = Board 2 Black
-
-  Default teams:
-    Team A = seats 0 + 3
-    Team B = seats 1 + 2
-
-  Therefore each team has one white and one black
-  player on different boards.
-*/
-
-const SEATS = [
-  {
-    id:0,
-    board:0,
-    color:"w",
-    label:"Board 1 White"
-  },
-  {
-    id:1,
-    board:0,
-    color:"b",
-    label:"Board 1 Black"
-  },
-  {
-    id:2,
-    board:1,
-    color:"w",
-    label:"Board 2 White"
-  },
-  {
-    id:3,
-    board:1,
-    color:"b",
-    label:"Board 2 Black"
-  }
-];
-
-const DEFAULT_TEAMS = [
-  "A",
-  "B",
-  "B",
-  "A"
-];
-
-
-/* ------------------------------------------------------------
-   GLOBALS
------------------------------------------------------------- */
+const FILES = ["a","b","c","d","e","f","g","h"];
+const START_FEN = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
 
 let peer = null;
-
+let hostId = null;
+let isHost = false;
+let mySeat = null;
+let myName = "";
 let hostConnection = null;
 
-let connections = new Map();
-
-let isHost = false;
-
-let myPeerId = "";
-
-let mySeat = null;
-
-let myName = "";
-
-let roomId = "";
+let connections = {};
+let nextConnectionSeat = 0;
 
 let state = null;
+let localGames = [null,null];
 
 let selectedSquare = null;
+let selectedPocket = null;
+let promotionMove = null;
 
-let selectedDrop = null;
+let clockTimer = null;
+let lastRender = 0;
 
-let selectedBoard = null;
+const $ = id => document.getElementById(id);
 
-let hostTimer = null;
+const urlParams = new URLSearchParams(location.search);
+const invitedRoom = urlParams.get("room");
 
-let currentProcessingBoard = 0;
-
-
-/* ------------------------------------------------------------
-   DOM
------------------------------------------------------------- */
-
-const home =
-  document.getElementById("home");
-
-const lobby =
-  document.getElementById("lobby");
-
-const game =
-  document.getElementById("game");
-
-const statusEl =
-  document.getElementById("status");
-
-
-/* ------------------------------------------------------------
-   HELPERS
------------------------------------------------------------- */
-
-function esc(value){
-
-  return String(value)
-    .replaceAll("&","&amp;")
-    .replaceAll("<","&lt;")
-    .replaceAll(">","&gt;")
-    .replaceAll('"',"&quot;")
-    .replaceAll("'","&#39;");
-
+if(invitedRoom){
+  $("joinNotice").classList.remove("hidden");
+  $("joinBtn").classList.remove("hidden");
+  $("createBtn").classList.add("hidden");
 }
 
+/* =========================================================
+   INITIAL STATE
+   ========================================================= */
 
-function seatInfo(seat){
-
-  return SEATS[seat];
-
-}
-
-
-function me(){
-
-  if(!state) return null;
-
-  return state.players.find(
-    p=>p && p.peerId===myPeerId
-  ) || null;
-
-}
-
-
-function playerAtSeat(seat){
-
-  if(!state) return null;
-
-  return state.players[seat] || null;
-
-}
-
-
-function teammate(player){
-
-  if(!player) return null;
-
-  return state.players.find(p=>
-    p &&
-    p.team===player.team &&
-    p.seat!==player.seat
-  ) || null;
-
-}
-
-
-function teamName(team){
-
-  return team==="A"
-    ? "Blue"
-    : "Red";
-
-}
-
-
-function boardName(board){
-
-  return board===0
-    ? "Board 1"
-    : "Board 2";
-
-}
-
-
-function colorName(color){
-
-  return color==="w"
-    ? "White"
-    : "Black";
-
-}
-
-
-function setStatus(text,color){
-
-  statusEl.textContent=text;
-
-  statusEl.style.color=color || "";
-
-}
-
-
-function toast(text){
-
-  const el =
-    document.getElementById("toast");
-
-  el.textContent=text;
-
-  el.style.display="block";
-
-  clearTimeout(toast.timer);
-
-  toast.timer=setTimeout(()=>{
-    el.style.display="none";
-  },2300);
-
-}
-
-
-function formatTime(milliseconds){
-
-  const ms =
-    Math.max(0,milliseconds);
-
-  const seconds =
-    Math.ceil(ms/1000);
-
-  const minutes =
-    Math.floor(seconds/60);
-
-  const remainder =
-    seconds%60;
-
-  return (
-    minutes+
-    ":"+
-    String(remainder).padStart(2,"0")
-  );
-
-}
-
-
-function emptyHand(){
-
+function emptyState(timeSeconds){
   return {
-    p:0,
-    n:0,
-    b:0,
-    r:0,
-    q:0
-  };
-
-}
-
-
-/* ------------------------------------------------------------
-   STATE
------------------------------------------------------------- */
-
-function createState(seconds){
-
-  const initial =
-    new Chess();
-
-  return {
-
-    phase:"lobby",
-
-    timeControl:seconds,
-
+    version:1,
+    started:false,
+    ended:false,
+    timeSeconds,
     players:[
-      null,
-      null,
-      null,
-      null
+      null,null,null,null
     ],
-
-    boards:[
+    teams:[1,2,1,2],
+    games:[
       {
-        fen:initial.fen(),
-        clock:seconds*1000,
-        lastTick:0,
-        active:false
+        fen:START_FEN,
+        pockets:{p:0,n:0,b:0,r:0,q:0}
       },
       {
-        fen:initial.fen(),
-        clock:seconds*1000,
-        lastTick:0,
-        active:false
+        fen:START_FEN,
+        pockets:{p:0,n:0,b:0,r:0,q:0}
       }
     ],
-
-    /*
-      hands[seat] belongs to that player.
-
-      Example:
-      Seat 0 captures a black knight.
-
-      Seat 0's teammate is seat 3.
-
-      Therefore:
-        hands[3].n++
-    */
-
-    hands:[
-      emptyHand(),
-      emptyHand(),
-      emptyHand(),
-      emptyHand()
+    clocks:[
+      [timeSeconds*1000,timeSeconds*1000],
+      [timeSeconds*1000,timeSeconds*1000]
     ],
-
-    chat:[],
-
-    reason:null,
-
-    version:0
-
+    lastClockUpdate:Date.now(),
+    chat:[]
   };
-
 }
 
+/* =========================================================
+   CONNECTION
+   ========================================================= */
 
-/* ------------------------------------------------------------
-   HOME
------------------------------------------------------------- */
+function setStatus(text, cls=""){
+  const el=$("connectionStatus");
+  el.textContent=text;
+  el.className="status "+cls;
+}
 
-document
-  .getElementById("homeButton")
-  .addEventListener("click",()=>{
+function createPeer(){
+  return new Promise((resolve,reject)=>{
+    try{
+      peer=new Peer();
 
-    const username =
-      document
-        .getElementById("username")
-        .value
-        .trim();
+      peer.on("open",id=>{
+        resolve(id);
+      });
 
-    if(username.length<2){
+      peer.on("error",err=>{
+        console.error(err);
 
-      document
-        .getElementById("homeError")
-        .textContent=
-          "Username must contain at least 2 characters.";
+        if(isHost){
+          setStatus("Connection error: "+(err.type||err.message),"error");
+        }else{
+          setStatus("Could not connect: "+(err.type||err.message),"error");
+        }
 
-      return;
+        reject(err);
+      });
+
+      peer.on("disconnected",()=>{
+        setStatus("Network connection interrupted.","warning");
+      });
+
+      peer.on("close",()=>{
+        setStatus("Connection closed.","error");
+      });
+
+    }catch(e){
+      reject(e);
     }
-
-    myName =
-      username.slice(0,20);
-
-    const params =
-      new URLSearchParams(
-        location.search
-      );
-
-    const requestedRoom =
-      params.get("room");
-
-    if(requestedRoom){
-
-      joinRoom(requestedRoom);
-
-    }else{
-
-      createRoom();
-
-    }
-
   });
+}
 
+/* =========================================================
+   HOST
+   ========================================================= */
 
-/* ------------------------------------------------------------
-   CREATE ROOM
------------------------------------------------------------- */
+$("createBtn").onclick=async()=>{
+  myName=$("username").value.trim();
 
-function createRoom(){
+  if(!myName){
+    setStatus("Enter a username first.","error");
+    return;
+  }
 
-  isHost=true;
+  const time=Number($("timeControl").value);
 
-  setStatus(
-    "Connecting...",
-    "#ffd34d"
-  );
+  $("createBtn").disabled=true;
+  setStatus("Creating room...");
 
+  try{
+    isHost=true;
+    state=emptyState(time);
 
-  peer =
-    new Peer({
-      debug:0
-    });
-
-
-  peer.on("open",id=>{
-
-    myPeerId=id;
-
-    roomId=id;
-
-
-    const seconds =
-      Number(
-        document
-          .getElementById("timeControl")
-          .value
-      );
-
-
-    state =
-      createState(seconds);
-
+    const id=await createPeer();
+    hostId=id;
+    mySeat=0;
 
     state.players[0]={
-      seat:0,
       name:myName,
-      peerId:myPeerId,
-      team:"A",
+      seat:0,
       connected:true
     };
 
+    const link=location.origin+
+      location.pathname+
+      "?room="+encodeURIComponent(hostId);
 
-    mySeat=0;
+    history.replaceState({}, "", "?room="+encodeURIComponent(hostId));
 
-
-    /*
-      Put room ID in URL.
-
-      This becomes:
-
-      https://username.github.io/bughouse/?room=XXXX
-    */
-
-    history.replaceState(
-      null,
-      "",
-      "?room="+
-      encodeURIComponent(roomId)
-    );
-
-
-    peer.on(
-      "connection",
-      handleIncomingConnection
-    );
-
-
-    peer.on("disconnected",()=>{
-
-      setStatus(
-        "Disconnected",
-        "#ff6478"
-      );
-
-    });
-
-
-    peer.on("close",()=>{
-
-      setStatus(
-        "Connection closed",
-        "#ff6478"
-      );
-
-    });
-
-
-    peer.on("error",err=>{
-
-      console.error(err);
-
-    });
-
+    $("shareLink").value=link;
 
     showLobby();
+    renderLobby();
 
-    broadcastState();
+    peer.on("connection",incomingConnection);
 
-    setStatus(
-      "Room ready",
-      "#46df93"
-    );
+    addSystemMessage("Room created. Invite three friends.");
 
-  });
+  }catch(e){
+    $("createBtn").disabled=false;
+    setStatus("Could not create room.","error");
+  }
+};
 
+function incomingConnection(conn){
 
-  peer.on("error",err=>{
-
-    console.error(err);
-
-    document
-      .getElementById("homeError")
-      .textContent=
-        "Could not create the room: "+
-        (err.message || err.type || "unknown error");
-
-    setStatus(
-      "Connection error",
-      "#ff6478"
-    );
-
-  });
-
-}
-
-
-/* ------------------------------------------------------------
-   JOIN ROOM
------------------------------------------------------------- */
-
-function joinRoom(hostId){
-
-  isHost=false;
-
-  roomId=hostId;
-
-  setStatus(
-    "Connecting...",
-    "#ffd34d"
-  );
-
-
-  peer =
-    new Peer({
-      debug:0
-    });
-
-
-  peer.on("open",id=>{
-
-    myPeerId=id;
-
-
-    hostConnection =
-      peer.connect(
-        hostId,
-        {
-          reliable:true,
-          serialization:"json",
-          metadata:{
-            username:myName
-          }
-        }
-      );
-
-
-    setupConnection(hostConnection);
-
-  });
-
-
-  peer.on("error",err=>{
-
-    console.error(err);
-
-    document
-      .getElementById("homeError")
-      .textContent=
-        "Could not join the room. Check the link and try again.";
-
-    setStatus(
-      "Connection error",
-      "#ff6478"
-    );
-
-  });
-
-}
-
-
-/* ------------------------------------------------------------
-   INCOMING CONNECTION
------------------------------------------------------------- */
-
-function handleIncomingConnection(conn){
-
-  setupConnection(conn);
-
-}
-
-
-/* ------------------------------------------------------------
-   CONNECTION SETUP
------------------------------------------------------------- */
-
-function setupConnection(conn){
+  if(!isHost)return;
 
   conn.on("open",()=>{
+    const freeSeat=findFreeSeat();
 
-    connections.set(
-      conn.peer,
-      conn
-    );
-
-
-    if(isHost){
-
-      /*
-        Find an empty seat.
-      */
-
-      const freeSeat =
-        [0,1,2,3].find(
-          seat=>!state.players[seat]
-        );
-
-
-      if(freeSeat===undefined){
-
-        conn.send({
-          type:"error",
-          message:"This room is full."
-        });
-
-        conn.close();
-
-        return;
-      }
-
-
-      const username =
-        String(
-          conn.metadata &&
-          conn.metadata.username
-            ? conn.metadata.username
-            : "Player"
-        )
-        .trim()
-        .slice(0,20) ||
-        "Player";
-
-
-      state.players[freeSeat]={
-        seat:freeSeat,
-        name:username,
-        peerId:conn.peer,
-        team:DEFAULT_TEAMS[freeSeat],
-        connected:true
-      };
-
-
-      /*
-        Tell the player their seat.
-      */
-
+    if(freeSeat===-1){
       conn.send({
-        type:"seat",
-        seat:freeSeat
+        type:"error",
+        message:"Room is full."
       });
-
-
-      broadcastState();
-
-      renderEverything();
-
-    }else{
-
-      setStatus(
-        "Connected",
-        "#46df93"
-      );
-
-    }
-
-  });
-
-
-  conn.on("data",msg=>{
-
-    if(isHost){
-
-      handleHostMessage(
-        conn,
-        msg
-      );
-
-    }else{
-
-      handleClientMessage(msg);
-
-    }
-
-  });
-
-
-  conn.on("close",()=>{
-
-    connections.delete(conn.peer);
-
-
-    if(!isHost) return;
-
-
-    const player =
-      state.players.find(
-        p=>p && p.peerId===conn.peer
-      );
-
-
-    if(!player) return;
-
-
-    player.connected=false;
-
-
-    /*
-      In the lobby, an empty seat becomes available.
-
-      During a game, keep the player's seat so a reconnect
-      does not destroy team/inventory information.
-    */
-
-    if(state.phase==="lobby"){
-
-      state.players[player.seat]=null;
-
-    }
-
-
-    broadcastState();
-
-    renderEverything();
-
-  });
-
-}
-
-
-/* ------------------------------------------------------------
-   HOST MESSAGE ROUTER
------------------------------------------------------------- */
-
-function handleHostMessage(
-  conn,
-  msg
-){
-
-  if(
-    !msg ||
-    typeof msg!=="object"
-  ){
-
-    return;
-
-  }
-
-
-  const player =
-    state.players.find(
-      p=>p && p.peerId===conn.peer
-    );
-
-
-  if(!player) return;
-
-
-  if(msg.type==="chat"){
-
-    const text =
-      String(msg.text || "")
-        .trim()
-        .slice(0,250);
-
-
-    if(!text) return;
-
-
-    addChat(
-      player.name,
-      text
-    );
-
-
-    return;
-  }
-
-
-  if(
-    msg.kind==="move" ||
-    msg.kind==="drop"
-  ){
-
-    if(state.phase!=="playing"){
-
-      reject(
-        player,
-        "The game is not running."
-      );
-
+      conn.close();
       return;
     }
 
+    connections[freeSeat]=conn;
 
-    processMove(
-      player,
-      msg
-    );
+    conn.seat=freeSeat;
 
-  }
+    conn.on("data",data=>{
+      hostReceive(conn,data);
+    });
 
+    conn.on("close",()=>{
+      if(state && state.players[freeSeat]){
+        state.players[freeSeat].connected=false;
+        broadcastState();
+        renderLobby();
+      }
+    });
+
+    conn.send({
+      type:"welcome",
+      seat:freeSeat,
+      state
+    });
+
+    state.players[freeSeat]={
+      name:"Joining...",
+      seat:freeSeat,
+      connected:true
+    };
+
+    broadcastState();
+    renderLobby();
+  });
 }
 
+function findFreeSeat(){
+  for(let i=1;i<4;i++){
+    if(!state.players[i])return i;
+  }
+  return -1;
+}
 
-/* ------------------------------------------------------------
-   CLIENT MESSAGE ROUTER
------------------------------------------------------------- */
+function hostReceive(conn,data){
 
-function handleClientMessage(msg){
+  if(!data || typeof data!=="object")return;
 
-  if(
-    !msg ||
-    typeof msg!=="object"
-  ){
+  if(data.type==="hello"){
+
+    const seat=conn.seat;
+
+    if(!state.players[seat])return;
+
+    let name=String(data.name||"Player")
+      .trim()
+      .slice(0,20);
+
+    if(!name)name="Player";
+
+    state.players[seat].name=name;
+
+    broadcastState();
+    renderLobby();
+    return;
+  }
+
+  if(data.type==="action"){
+    handleAction(data.action,conn.seat);
+    return;
+  }
+
+  if(data.type==="chat"){
+    addChat(data.name,data.message);
+    return;
+  }
+
+  if(data.type==="team"){
+    if(conn.seat===0)return;
+    return;
+  }
+}
+
+/* =========================================================
+   JOIN
+   ========================================================= */
+
+$("joinBtn").onclick=async()=>{
+  myName=$("username").value.trim();
+
+  if(!myName){
+    setStatus("Enter a username first.","error");
+    return;
+  }
+
+  if(!invitedRoom){
+    setStatus("No room link found.","error");
+    return;
+  }
+
+  $("joinBtn").disabled=true;
+  setStatus("Connecting to room...");
+
+  try{
+    isHost=false;
+
+    await createPeer();
+
+    hostId=invitedRoom;
+
+    hostConnection=peer.connect(hostId,{
+      reliable:true
+    });
+
+    hostConnection.on("open",()=>{
+      hostConnection.send({
+        type:"hello",
+        name:myName
+      });
+
+      setStatus("Connected.","success");
+    });
+
+    hostConnection.on("data",data=>{
+      clientReceive(data);
+    });
+
+    hostConnection.on("close",()=>{
+      setStatus("Host disconnected. The room has ended.","error");
+    });
+
+    hostConnection.on("error",e=>{
+      setStatus("Connection error.","error");
+      console.error(e);
+    });
+
+  }catch(e){
+    $("joinBtn").disabled=false;
+    setStatus("Could not connect to room.","error");
+  }
+};
+
+function clientReceive(data){
+
+  if(data.type==="welcome"){
+    mySeat=data.seat;
+    state=data.state;
+
+    showLobby();
+    renderLobby();
 
     return;
   }
 
+  if(data.type==="state"){
+    state=data.state;
 
-  if(msg.type==="seat"){
-
-    mySeat=
-      Number(msg.seat);
-
-    return;
-  }
-
-
-  if(msg.type==="state"){
-
-    state=msg.state;
-
-
-    const player =
-      state.players.find(
-        p=>p && p.peerId===myPeerId
-      );
-
-
-    if(player){
-
-      mySeat=player.seat;
-
+    if(state.started){
+      showGame();
+    }else{
+      showLobby();
     }
 
-
-    renderEverything();
-
+    renderAll();
     return;
   }
 
-
-  if(msg.type==="error"){
-
-    toast(
-      msg.message ||
-      "Illegal action."
-    );
-
+  if(data.type==="chat"){
+    addChatLocal(data.name,data.message);
+    return;
   }
 
+  if(data.type==="error"){
+    alert(data.message||"Server error");
+  }
 }
 
+/* =========================================================
+   NETWORK STATE
+   ========================================================= */
 
-/* ------------------------------------------------------------
-   BROADCAST
------------------------------------------------------------- */
+function sendToHost(message){
+  if(hostConnection && hostConnection.open){
+    hostConnection.send(message);
+  }
+}
 
-function broadcast(packet){
+function broadcast(message){
+  for(const seat in connections){
+    const c=connections[seat];
 
-  for(
-    const conn of connections.values()
-  ){
-
-    if(!conn.open) continue;
-
-
-    try{
-
-      conn.send(packet);
-
-    }catch(error){
-
-      console.error(error);
-
+    if(c && c.open){
+      try{c.send(message)}catch(e){}
     }
-
   }
-
 }
-
 
 function broadcastState(){
-
-  if(!state) return;
-
-
-  state.version++;
-
+  if(!isHost)return;
 
   broadcast({
     type:"state",
-    state:state
+    state
   });
-
-
-  renderEverything();
-
 }
 
+function syncState(){
+  if(isHost){
+    broadcastState();
+  }else{
+    sendToHost({
+      type:"requestState"
+    });
+  }
+}
 
-/* ------------------------------------------------------------
+/* =========================================================
    LOBBY
------------------------------------------------------------- */
+   ========================================================= */
 
 function showLobby(){
-
-  home.classList.add("hidden");
-
-  game.classList.add("hidden");
-
-  lobby.classList.remove("hidden");
-
-
-  document
-    .getElementById("roomText")
-    .textContent=
-      "Room ID: "+roomId;
-
-
-  /*
-    The room URL is shareable once hosted on HTTPS.
-  */
-
-  document
-    .getElementById("shareUrl")
-    .value=
-      location.href.split("?")[0]+
-      "?room="+
-      encodeURIComponent(roomId);
-
-
-  document
-    .getElementById("lobbyTime")
-    .value=
-      String(state.timeControl);
-
-
-  document
-    .getElementById("lobbyTime")
-    .disabled=
-      !isHost;
-
-
-  renderLobby();
-
+  $("homeScreen").classList.add("hidden");
+  $("gameScreen").classList.add("hidden");
+  $("lobbyScreen").classList.remove("hidden");
 }
-
 
 function renderLobby(){
 
-  if(!state) return;
-
-
-  const container =
-    document.getElementById(
-      "lobbyPlayers"
-    );
-
-
-  container.innerHTML =
-    SEATS.map(seat=>{
-
-      const p =
-        state.players[seat.id];
-
-
-      if(!p){
-
-        return `
-          <div class="playerRow">
-
-            <div class="playerSeat">
-
-              <div class="seat">
-                ${seat.id+1}
-              </div>
-
-              <div>
-
-                <b>
-                  ${esc(seat.label)}
-                </b>
-
-                <div class="small">
-                  Waiting...
-                </div>
-
-              </div>
-
-            </div>
-
-            <div class="small">
-              Empty
-            </div>
-
-          </div>
-        `;
-
-      }
-
-
-      return `
-        <div class="playerRow">
-
-          <div class="playerSeat">
-
-            <div class="seat">
-              ${seat.id+1}
-            </div>
-
-            <div>
-
-              <b>
-                ${esc(p.name)}
-              </b>
-
-              <div class="${
-                p.team==="A"
-                  ? "teamA"
-                  : "teamB"
-              }">
-
-                Team ${teamName(p.team)}
-                · ${seat.label}
-
-                ${
-                  p.seat===mySeat
-                    ? " · You"
-                    : ""
-                }
-
-              </div>
-
-            </div>
-
-          </div>
-
-
-          ${
-            isHost
-
-            ? `
-
-              <select
-                class="teamChooser"
-                data-seat="${seat.id}"
-              >
-
-                <option
-                  value="A"
-                  ${
-                    p.team==="A"
-                      ? "selected"
-                      : ""
-                  }
-                >
-                  Team Blue
-                </option>
-
-                <option
-                  value="B"
-                  ${
-                    p.team==="B"
-                      ? "selected"
-                      : ""
-                  }
-                >
-                  Team Red
-                </option>
-
-              </select>
-
-            `
-
-            : `
-
-              <span class="${
-                p.team==="A"
-                  ? "teamA"
-                  : "teamB"
-              }">
-
-                Team ${teamName(p.team)}
-
-              </span>
-
-            `
-          }
-
-        </div>
-      `;
-
-    }).join("");
-
-
-  document
-    .querySelectorAll(".teamChooser")
-    .forEach(select=>{
-
-      select.addEventListener(
-        "change",
-        ()=>{
-
-          if(!isHost) return;
-
-
-          const seat =
-            Number(
-              select.dataset.seat
-            );
-
-
-          const player =
-            state.players[seat];
-
-
-          if(!player) return;
-
-
-          player.team=
-            select.value;
-
-
-          renderLobby();
-
-          broadcastState();
-
-        }
-      );
-
-    });
-
-
-  validateLobby();
-
+  if(!state)return;
+
+  $("lobbyTime").value=String(state.timeSeconds);
+
+  const seats=$("seats");
+  seats.innerHTML="";
+
+  const roles=[
+    "Board 1 — White",
+    "Board 1 — Black",
+    "Board 2 — White",
+    "Board 2 — Black"
+  ];
+
+  for(let i=0;i<4;i++){
+
+    const p=state.players[i];
+
+    const div=document.createElement("div");
+
+    div.className=
+      "seat "+
+      (state.teams[i]===1?"team1":"team2")+
+      (!p?" empty":"");
+
+    div.innerHTML=`
+      <div class="role">${roles[i]}</div>
+      <div class="name">
+        ${p ? escapeHtml(p.name) : "Waiting for player..."}
+      </div>
+      <div class="status">
+        Team ${state.teams[i]}
+      </div>
+    `;
+
+    seats.appendChild(div);
+  }
+
+  renderTeamControls();
+
+  const full=state.players.every(Boolean);
+
+  const teamsOK=
+    state.players.filter((_,i)=>state.teams[i]===1).length===2 &&
+    state.players.filter((_,i)=>state.teams[i]===2).length===2;
+
+  $("startBtn").disabled=!(
+    isHost &&
+    full &&
+    teamsOK &&
+    !state.started
+  );
+
+  if(!full){
+    $("lobbyStatus").textContent=
+      "Waiting for "+state.players.filter(x=>!x).length+" more player(s).";
+  }else if(!teamsOK){
+    $("lobbyStatus").textContent=
+      "Each team must have exactly two players.";
+  }else{
+    $("lobbyStatus").textContent=
+      isHost
+      ?"All players ready. Start when everyone is ready."
+      :"Waiting for the host to start.";
+  }
 }
 
+function renderTeamControls(){
 
-function validateLobby(){
+  const box=$("teamControls");
+  box.innerHTML="";
 
-  if(!isHost) return true;
+  if(!isHost){
+    box.innerHTML=
+      `<p class="status">The host chooses the teams.</p>`;
+    return;
+  }
 
+  for(let i=0;i<4;i++){
 
-  const players =
-    state.players.filter(Boolean);
+    const p=state.players[i];
 
+    if(!p)continue;
 
-  let error="";
+    const row=document.createElement("div");
+    row.style.marginBottom="8px";
 
+    const select=document.createElement("select");
 
-  if(players.length!==4){
+    select.innerHTML=`
+      <option value="1">Team 1</option>
+      <option value="2">Team 2</option>
+    `;
 
-    error=
-      "Four players are required.";
+    select.value=state.teams[i];
 
+    select.onchange=()=>{
+      state.teams[i]=Number(select.value);
+      broadcastState();
+      renderLobby();
+    };
+
+    row.innerHTML=
+      `<span>${escapeHtml(p.name)} — </span>`;
+
+    row.appendChild(select);
+    box.appendChild(row);
+  }
+}
+
+$("lobbyTime").onchange=()=>{
+  if(!isHost || state.started)return;
+
+  state.timeSeconds=Number($("lobbyTime").value);
+
+  state.clocks=[
+    [state.timeSeconds*1000,state.timeSeconds*1000],
+    [state.timeSeconds*1000,state.timeSeconds*1000]
+  ];
+
+  broadcastState();
+  renderLobby();
+};
+
+$("startBtn").onclick=()=>{
+  if(!isHost)return;
+
+  if(state.players.some(p=>!p)){
+    alert("Four players are required.");
+    return;
+  }
+
+  const t1=state.players
+    .filter((_,i)=>state.teams[i]===1).length;
+
+  if(t1!==2){
+    alert("Each team needs two players.");
+    return;
+  }
+
+  state.started=true;
+  state.ended=false;
+  state.lastClockUpdate=Date.now();
+
+  state.games=[
+    {
+      fen:START_FEN,
+      pockets:{p:0,n:0,b:0,r:0,q:0}
+    },
+    {
+      fen:START_FEN,
+      pockets:{p:0,n:0,b:0,r:0,q:0}
+    }
+  ];
+
+  state.clocks=[
+    [state.timeSeconds*1000,state.timeSeconds*1000],
+    [state.timeSeconds*1000,state.timeSeconds*1000]
+  ];
+
+  broadcastState();
+  showGame();
+  renderAll();
+  addSystemMessage("Match started!");
+};
+
+/* =========================================================
+   GAME
+   ========================================================= */
+
+function showGame(){
+  $("homeScreen").classList.add("hidden");
+  $("lobbyScreen").classList.add("hidden");
+  $("gameScreen").classList.remove("hidden");
+
+  if(!clockTimer){
+    clockTimer=setInterval(()=>{
+      renderClocks();
+    },100);
+  }
+}
+
+function initLocalGames(){
+
+  if(!state)return;
+
+  localGames=[
+    new Chess(state.games[0].fen),
+    new Chess(state.games[1].fen)
+  ];
+}
+
+function renderAll(){
+  if(!state)return;
+
+  if(state.started){
+    showGame();
+    initLocalGames();
+    renderBoards();
+    renderPlayers();
+    renderClocks();
+    renderStatus();
   }else{
+    renderLobby();
+  }
+}
 
-    const teamA =
-      players.filter(
-        p=>p.team==="A"
-      );
+/* =========================================================
+   BOARD RENDERING
+   ========================================================= */
 
-    const teamB =
-      players.filter(
-        p=>p.team==="B"
-      );
+function renderBoards(){
 
+  if(!localGames[0]||!localGames[1])return;
 
-    if(
-      teamA.length!==2 ||
-      teamB.length!==2
-    ){
+  renderBoard(0);
+  renderBoard(1);
 
-      error=
-        "Each team must contain exactly two players.";
+  renderPocket(0);
+  renderPocket(1);
+}
 
-    }else{
+function renderBoard(boardIndex){
 
-      /*
-        Each team must occupy both boards.
-      */
+  const boardEl=$("board"+(boardIndex+1));
+  boardEl.innerHTML="";
 
-      const boardsA =
-        new Set(
-          teamA.map(
-            p=>seatInfo(p.seat).board
-          )
-        );
+  const seatWhite=boardIndex===0?0:2;
+  const seatBlack=boardIndex===0?1:3;
 
+  const myColor =
+    mySeat===seatWhite ? "w" :
+    mySeat===seatBlack ? "b" :
+    null;
 
-      const boardsB =
-        new Set(
-          teamB.map(
-            p=>seatInfo(p.seat).board
-          )
-        );
+  const orientation =
+    myColor==="b" ? "b" : "w";
 
+  const game=localGames[boardIndex];
+
+  const ranks=
+    orientation==="w"
+    ? [8,7,6,5,4,3,2,1]
+    : [1,2,3,4,5,6,7,8];
+
+  const files=
+    orientation==="w"
+    ? FILES
+    : [...FILES].reverse();
+
+  let legalTargets=[];
+
+  if(selectedSquare && selectedSquare.board===boardIndex){
+
+    try{
+      legalTargets=game.moves({
+        square:selectedSquare.square,
+        verbose:true
+      });
+    }catch(e){
+      legalTargets=[];
+    }
+  }
+
+  for(const rank of ranks){
+    for(const file of files){
+
+      const square=file+rank;
+      const piece=game.get(square);
+
+      const div=document.createElement("div");
+
+      const isLight=
+        (FILES.indexOf(file)+rank)%2===1;
+
+      div.className=
+        "square "+
+        (isLight?"light":"dark");
 
       if(
-        boardsA.size!==2 ||
-        boardsB.size!==2
+        selectedSquare &&
+        selectedSquare.board===boardIndex &&
+        selectedSquare.square===square
       ){
-
-        error=
-          "Each team must have one player on each board.";
-
+        div.classList.add("selected");
       }
 
-    }
+      const target=legalTargets.find(m=>m.to===square);
 
+      if(target){
+        if(piece)div.classList.add("capture");
+        else div.classList.add("target");
+      }
+
+      if(selectedPocket &&
+        selectedPocket.board===boardIndex){
+        if(!piece){
+          div.classList.add("target");
+        }
+      }
+
+      if(piece){
+
+        const span=document.createElement("span");
+
+        span.className=
+          "piece "+
+          (piece.color==="w"?"whitepiece":"blackpiece");
+
+        span.textContent=PIECES[piece.type];
+
+        div.appendChild(span);
+      }
+
+      div.onclick=()=>squareClicked(
+        boardIndex,
+        square,
+        piece
+      );
+
+      boardEl.appendChild(div);
+    }
   }
 
+  const turn=game.turn();
 
-  document
-    .getElementById("lobbyError")
-    .textContent=error;
+  const canPlay=
+    !state.ended &&
+    state.started &&
+    (
+      (boardIndex===0 && (mySeat===0||mySeat===1)) ||
+      (boardIndex===1 && (mySeat===2||mySeat===3))
+    );
 
+  const active =
+    canPlay &&
+    (
+      (turn==="w" && (mySeat===(boardIndex===0?0:2))) ||
+      (turn==="b" && (mySeat===(boardIndex===0?1:3)))
+    );
 
-  document
-    .getElementById("startButton")
-    .disabled=!!error;
+  const label=$("clock"+(boardIndex+1)+"label");
 
-
-  return !error;
-
+  if(label){
+    label.innerHTML=
+      `<span class="turn-dot ${active?"on":""}"></span>`+
+      `${turn==="w"?"White":"Black"} to move`;
+  }
 }
 
+/* =========================================================
+   BOARD INPUT
+   ========================================================= */
 
-/* ------------------------------------------------------------
-   TIME CONTROL
------------------------------------------------------------- */
+function squareClicked(board,square,piece){
 
-document
-  .getElementById("lobbyTime")
-  .addEventListener(
-    "change",
-    ()=>{
+  if(!state || state.ended)return;
 
-      if(!isHost) return;
+  const seatWhite=board===0?0:2;
+  const seatBlack=board===0?1:3;
 
+  const myColor =
+    mySeat===seatWhite?"w":
+    mySeat===seatBlack?"b":null;
 
-      if(state.phase!=="lobby") return;
+  if(!myColor)return;
 
+  const game=localGames[board];
 
-      const seconds =
-        Number(
-          document
-            .getElementById("lobbyTime")
-            .value
-        );
+  if(selectedPocket &&
+     selectedPocket.board===board){
 
+    sendAction({
+      type:"drop",
+      board,
+      square,
+      piece:selectedPocket.type
+    });
 
-      state.timeControl=seconds;
+    selectedPocket=null;
+    renderBoards();
+    return;
+  }
 
+  if(selectedSquare){
 
-      for(
-        const board of state.boards
-      ){
-
-        board.clock=
-          seconds*1000;
-
-      }
-
-
-      broadcastState();
-
+    if(
+      selectedSquare.board===board &&
+      selectedSquare.square===square
+    ){
+      selectedSquare=null;
+      renderBoards();
+      return;
     }
-  );
 
+    if(selectedSquare.board===board){
 
-/* ------------------------------------------------------------
-   START
------------------------------------------------------------- */
+      const moves=game.moves({
+        square:selectedSquare.square,
+        verbose:true
+      });
 
-document
-  .getElementById("startButton")
-  .addEventListener(
-    "click",
-    ()=>{
+      const move=moves.find(m=>m.to===square);
 
-      if(!isHost) return;
+      if(move){
 
+        if(move.promotion){
 
-      if(!validateLobby()) return;
+          promotionMove={
+            board,
+            from:selectedSquare.square,
+            to:square
+          };
 
-
-      const now=
-        Date.now();
-
-
-      state.phase="playing";
-
-      state.reason=null;
-
-
-      for(
-        const board of state.boards
-      ){
-
-        board.clock=
-          state.timeControl*1000;
-
-        board.lastTick=now;
-
-        board.active=true;
-
-      }
-
-
-      startHostClock();
-
-      broadcastState();
-
-    }
-  );
-
-
-/* ------------------------------------------------------------
-   CLOCK
------------------------------------------------------------- */
-
-function startHostClock(){
-
-  clearInterval(hostTimer);
-
-
-  hostTimer=
-    setInterval(
-      ()=>{
-
-        if(!isHost) return;
-
-        if(state.phase!=="playing") return;
-
-
-        const now=
-          Date.now();
-
-
-        for(
-          const board of state.boards
-        ){
-
-          if(!board.active) continue;
-
-
-          if(!board.lastTick){
-
-            board.lastTick=now;
-
-          }
-
-
-          const elapsed=
-            now-board.lastTick;
-
-
-          board.clock-=elapsed;
-
-          board.lastTick=now;
-
-
-          if(board.clock<=0){
-
-            board.clock=0;
-
-            finishGame(
-              "Time expired on "+
-              boardName(
-                state.boards.indexOf(board)
-              )+
-              "."
-            );
-
-            return;
-
-          }
-
+          $("promotion").classList.remove("hidden");
+          return;
         }
 
+        sendAction({
+          type:"move",
+          board,
+          from:selectedSquare.square,
+          to:square
+        });
 
-        /*
-          Send authoritative clock snapshots.
-        */
+        selectedSquare=null;
+        return;
+      }
+    }
+  }
 
-        broadcastState();
+  if(piece && piece.color===myColor){
 
-      },
-      200
-    );
+    const turn=game.turn();
 
+    if(turn!==myColor)return;
+
+    selectedSquare={
+      board,
+      square
+    };
+
+    selectedPocket=null;
+
+    renderBoards();
+  }
 }
 
+/* =========================================================
+   POCKETS
+   ========================================================= */
 
-/* ------------------------------------------------------------
-   PROCESS MOVE
------------------------------------------------------------- */
+function renderPocket(board){
 
-function processMove(
-  player,
-  action
-){
+  const whiteSeat=board===0?0:2;
+  const blackSeat=board===0?1:3;
 
-  const seat=
-    seatInfo(player.seat);
+  const mySeatOnBoard=
+    mySeat===whiteSeat||mySeat===blackSeat;
 
+  const team=mySeatOnBoard
+    ?state.teams[mySeat]
+    :null;
 
-  if(!seat){
+  const partnerSeat=
+    mySeatOnBoard
+    ?findPartner(mySeat)
+    :null;
 
-    reject(
-      player,
-      "Invalid seat."
-    );
+  const pocket=
+    mySeatOnBoard
+    ?state.games[board].pockets
+    :null;
 
-    return;
+  const top=$("pocket"+(board+1)+"top");
+  const bottom=$("pocket"+(board+1)+"bottom");
+
+  top.innerHTML="";
+  bottom.innerHTML="";
+
+  const types=["q","r","b","n","p"];
+
+  for(const type of types){
+
+    const count=pocket?Number(pocket[type]||0):0;
+
+    if(!count)continue;
+
+    const button=document.createElement("button");
+
+    button.className="pocket-piece";
+
+    if(
+      selectedPocket &&
+      selectedPocket.board===board &&
+      selectedPocket.type===type
+    ){
+      button.classList.add("selected");
+    }
+
+    button.innerHTML=
+      `<span class="whitepiece">${PIECES[type]}</span>`+
+      `<span class="pocket-count">${count}</span>`;
+
+    button.onclick=()=>{
+      if(!mySeatOnBoard)return;
+
+      selectedSquare=null;
+
+      if(
+        selectedPocket &&
+        selectedPocket.board===board &&
+        selectedPocket.type===type
+      ){
+        selectedPocket=null;
+      }else{
+        selectedPocket={
+          board,
+          type
+        };
+      }
+
+      renderBoards();
+    };
+
+    if(
+      mySeatOnBoard &&
+      (
+        (mySeat===whiteSeat && state.games[board].fen.split(" ")[1]==="w") ||
+        (mySeat===blackSeat && state.games[board].fen.split(" ")[1]==="b")
+      )
+    ){
+      bottom.appendChild(button);
+    }else if(mySeatOnBoard){
+      top.appendChild(button);
+    }
   }
 
-
-  const boardIndex=
-    seat.board;
-
-
-  const board=
-    state.boards[boardIndex];
-
-
-  currentProcessingBoard=
-    boardIndex;
-
-
-  /*
-    First consume the time that elapsed since the previous
-    authoritative state.
-
-    This is done on the server/host, not the player's browser.
-  */
-
-  const now=
-    Date.now();
-
-
-  if(board.lastTick){
-
-    board.clock-=
-      now-board.lastTick;
-
+  if(mySeatOnBoard){
+    const who=state.players[partnerSeat];
+    const label=document.createElement("span");
+    label.className="status";
+    label.textContent=
+      "Drops received from "+(who?who.name:"teammate");
+    top.prepend(label);
   }
-
-
-  board.lastTick=now;
-
-
-  if(board.clock<=0){
-
-    board.clock=0;
-
-    finishGame(
-      "Time expired on "+
-      boardName(boardIndex)+"."
-    );
-
-    return;
-
-  }
-
-
-  const chess=
-    new Chess(board.fen);
-
-
-  /*
-    Correct side to move?
-  */
-
-  if(chess.turn()!==seat.color){
-
-    reject(
-      player,
-      "It is not your turn."
-    );
-
-    /*
-      We changed lastTick while rejecting.
-      Reset it so the clock does not accidentally consume
-      time from a rejected action.
-    */
-
-    board.lastTick=
-      Date.now();
-
-    return;
-
-  }
-
-
-  if(action.kind==="move"){
-
-    processNormalMove(
-      player,
-      seat,
-      boardIndex,
-      chess,
-      action
-    );
-
-    return;
-
-  }
-
-
-  if(action.kind==="drop"){
-
-    processDrop(
-      player,
-      seat,
-      boardIndex,
-      chess,
-      action
-    );
-
-    return;
-
-  }
-
 }
 
+function findPartner(seat){
 
-/* ------------------------------------------------------------
-   NORMAL MOVE
------------------------------------------------------------- */
+  const team=state.teams[seat];
 
-function processNormalMove(
-  player,
-  seat,
-  boardIndex,
-  chess,
-  action
-){
-
-  const from=
-    String(action.from || "")
-      .toLowerCase();
-
-
-  const to=
-    String(action.to || "")
-      .toLowerCase();
-
-
-  if(
-    !/^[a-h][1-8]$/.test(from) ||
-    !/^[a-h][1-8]$/.test(to)
-  ){
-
-    reject(
-      player,
-      "Invalid square."
-    );
-
-    state.boards[boardIndex].lastTick=
-      Date.now();
-
-    return;
-
+  for(let i=0;i<4;i++){
+    if(i!==seat &&
+       state.players[i] &&
+       state.teams[i]===team){
+      return i;
+    }
   }
 
+  return null;
+}
 
-  const piece=
-    chess.get(from);
+/* =========================================================
+   HOST GAME AUTHORITY
+   ========================================================= */
 
+function handleAction(action,seat){
 
-  if(!piece){
+  if(!isHost || !state || !state.started || state.ended)return;
 
-    reject(
-      player,
-      "There is no piece there."
-    );
+  if(!action || typeof action!=="object")return;
 
-    state.boards[boardIndex].lastTick=
-      Date.now();
+  updateClocks();
 
-    return;
-
+  if(action.type==="move"){
+    hostMove(action,seat);
   }
 
-
-  if(piece.color!==seat.color){
-
-    reject(
-      player,
-      "That is not your piece."
-    );
-
-    state.boards[boardIndex].lastTick=
-      Date.now();
-
-    return;
-
+  if(action.type==="drop"){
+    hostDrop(action,seat);
   }
 
+  broadcastState();
+  renderAll();
+}
 
-  const legalMoves=
-    chess.moves({
+function hostMove(action,seat){
+
+  const board=Number(action.board);
+
+  if(board!==0 && board!==1)return;
+
+  const whiteSeat=board===0?0:2;
+  const blackSeat=board===0?1:3;
+
+  const color=
+    seat===whiteSeat?"w":
+    seat===blackSeat?"b":
+    null;
+
+  if(!color)return;
+
+  const game=new Chess(state.games[board].fen);
+
+  if(game.turn()!==color)return;
+
+  const from=String(action.from||"");
+  const to=String(action.to||"");
+
+  if(!/^[a-h][1-8]$/.test(from))return;
+  if(!/^[a-h][1-8]$/.test(to))return;
+
+  const moving=game.get(from);
+
+  if(!moving || moving.color!==color)return;
+
+  let move;
+
+  try{
+
+    const legal=game.moves({
       square:from,
       verbose:true
     });
 
+    const candidate=legal.find(m=>m.to===to);
 
-  const move=
-    legalMoves.find(
-      m=>m.to===to
-    );
+    if(!candidate)return;
 
+    if(candidate.promotion){
 
-  if(!move){
+      const promotion=
+        ["q","r","b","n"].includes(action.promotion)
+        ?action.promotion
+        :"q";
 
-    reject(
-      player,
-      "Illegal chess move."
-    );
+      move=game.move({
+        from,
+        to,
+        promotion
+      });
 
-    state.boards[boardIndex].lastTick=
-      Date.now();
+    }else{
 
-    return;
-
-  }
-
-
-  /*
-    Work out captured piece BEFORE making the move.
-  */
-
-  let capturedType=null;
-
-
-  const target=
-    chess.get(to);
-
-
-  if(target){
-
-    /*
-      A king can never legally be captured by chess.js,
-      so this is always a normal captured piece.
-    */
-
-    capturedType=
-      target.type;
-
-  }
-
-
-  /*
-    En passant captures a pawn on the square behind
-    the destination.
-  */
-
-  if(
-    move.isEnPassant &&
-    move.isEnPassant()
-  ){
-
-    capturedType="p";
-
-  }
-
-
-  /*
-    Promotion.
-  */
-
-  let promotion;
-
-
-  if(
-    piece.type==="p" &&
-    (
-      to.endsWith("1") ||
-      to.endsWith("8")
-    )
-  ){
-
-    promotion=
-      String(
-        action.promotion || ""
-      ).toLowerCase();
-
-
-    if(
-      !["q","r","b","n"]
-        .includes(promotion)
-    ){
-
-      reject(
-        player,
-        "Promotion must be Q, R, B or N."
-      );
-
-      state.boards[boardIndex].lastTick=
-        Date.now();
-
-      return;
+      move=game.move({
+        from,
+        to
+      });
 
     }
 
-  }
-
-
-  const result=
-    chess.move({
-      from:from,
-      to:to,
-      ...(promotion
-        ? {promotion:promotion}
-        : {})
-    });
-
-
-  if(!result){
-
-    reject(
-      player,
-      "Illegal move."
-    );
-
-    state.boards[boardIndex].lastTick=
-      Date.now();
-
+  }catch(e){
     return;
-
   }
 
+  if(!move)return;
 
-  /*
-    Captured material goes to the teammate.
+  if(move.captured){
 
-    This is the central bughouse rule.
-  */
+    const recipient=findPartner(seat);
 
-  if(capturedType){
+    if(recipient!==null){
 
-    const partner=
-      teammate(player);
+      const pocketBoard=
+        recipient===0||recipient===1?0:1;
 
-
-    if(partner){
-
-      state.hands[
-        partner.seat
-      ][capturedType]++;
-
+      // The teammate receives the captured piece on THEIR board.
+      state.games[pocketBoard].pockets[move.captured]++;
     }
-
   }
 
+  state.games[board].fen=game.fen();
 
-  /*
-    Save position.
-  */
-
-  state.boards[boardIndex].fen=
-    chess.fen();
-
-
-  state.boards[boardIndex].lastTick=
-    Date.now();
-
-
-  /*
-    Bughouse ends when either board is checkmated.
-
-    Stalemate also ends the game here.
-  */
-
-  if(chess.isCheckmate()){
-
-    finishGame(
-      player.name+
-      " checkmated the opponent on "+
-      boardName(boardIndex)+"."
-    );
-
-    return;
-
+  if(game.isGameOver()){
+    state.ended=true;
   }
 
-
-  if(chess.isStalemate()){
-
-    finishGame(
-      boardName(boardIndex)+
-      " ended in stalemate."
-    );
-
-    return;
-
-  }
-
-
-  broadcastState();
-
+  state.lastClockUpdate=Date.now();
 }
 
+function hostDrop(action,seat){
 
-/* ------------------------------------------------------------
-   DROP
------------------------------------------------------------- */
+  const board=Number(action.board);
 
-function processDrop(
-  player,
-  seat,
-  boardIndex,
-  chess,
-  action
-){
+  if(board!==0 && board!==1)return;
 
-  const type=
-    String(action.piece || "")
-      .toLowerCase();
+  const whiteSeat=board===0?0:2;
+  const blackSeat=board===0?1:3;
 
+  const color=
+    seat===whiteSeat?"w":
+    seat===blackSeat?"b":
+    null;
 
-  const to=
-    String(action.to || "")
-      .toLowerCase();
+  if(!color)return;
 
+  const type=String(action.piece||"");
 
-  if(!PIECES.includes(type)){
+  if(!["p","n","b","r","q"].includes(type))return;
 
-    reject(
-      player,
-      "Invalid drop piece."
-    );
+  const pocketBoard=
+    seat===0||seat===1?0:1;
 
-    state.boards[boardIndex].lastTick=
-      Date.now();
+  const pocket=state.games[pocketBoard].pockets;
 
-    return;
+  if((pocket[type]||0)<=0)return;
 
-  }
+  const square=String(action.square||"");
 
+  if(!/^[a-h][1-8]$/.test(square))return;
 
-  if(!/^[a-h][1-8]$/.test(to)){
+  const rank=Number(square[1]);
 
-    reject(
-      player,
-      "Invalid destination."
-    );
+  // Pawns may not be dropped on first or last rank.
+  if(type==="p" && (rank===1||rank===8))return;
 
-    state.boards[boardIndex].lastTick=
-      Date.now();
+  const game=new Chess(state.games[board].fen);
 
-    return;
-
-  }
-
+  if(game.get(square))return;
 
   /*
-    The player must actually possess this captured piece.
+     Put the dropped piece on the board temporarily.
+     This lets chess.js check king safety.
   */
+  try{
 
-  if(
-    state.hands[player.seat][type] <= 0
-  ){
+    const ok=game.put({
+      type,
+      color
+    },square);
 
-    reject(
-      player,
-      "You do not have that piece."
-    );
+    if(!ok)return;
 
-    state.boards[boardIndex].lastTick=
-      Date.now();
+    /*
+      A drop may not leave the dropping side's king in check.
+      We deliberately allow normal bughouse sacrifices.
+      "In capture" therefore means an illegal occupied/capture
+      square is never used for a drop.
+    */
+    const kingSquare=game.findPiece({
+      type:"k",
+      color
+    })[0];
 
-    return;
+    if(!kingSquare)return;
 
-  }
-
-
-  /*
-    Drops can only be made on empty squares.
-  */
-
-  if(chess.get(to)){
-
-    reject(
-      player,
-      "The destination is occupied."
-    );
-
-    state.boards[boardIndex].lastTick=
-      Date.now();
-
-    return;
-
-  }
-
-
-  /*
-    Pawn may never be dropped on rank 1 or 8.
-  */
-
-  if(
-    type==="p" &&
-    (
-      to.endsWith("1") ||
-      to.endsWith("8")
-    )
-  ){
-
-    reject(
-      player,
-      "A pawn cannot be dropped on the first or last rank."
-    );
-
-    state.boards[boardIndex].lastTick=
-      Date.now();
-
-    return;
-
-  }
-
-
-  /*
-    Put the piece onto a temporary board.
-  */
-
-  const test=
-    new Chess(chess.fen());
-
-
-  const placed=
-    test.put(
-      {
-        type:type,
-        color:seat.color
-      },
-      to
-    );
-
-
-  if(!placed){
-
-    reject(
-      player,
-      "Illegal drop."
-    );
-
-    state.boards[boardIndex].lastTick=
-      Date.now();
-
-    return;
-
-  }
-
-
-  /*
-    The drop itself must not leave your own king in check.
-
-    This is the important "no illegal drops" test.
-
-    A drop is allowed to give the opponent check.
-    It simply may not leave the dropping player's own king
-    in check.
-  */
-
-  const kingSquare=
-    findKing(
-      test,
-      seat.color
-    );
-
-
-  if(
-    !kingSquare ||
-    test.isAttacked(
+    if(game.isAttacked(
       kingSquare,
-      seat.color==="w"
-        ? "b"
-        : "w"
-    )
-  ){
-
-    reject(
-      player,
-      "That drop would leave your king in check."
-    );
-
-    state.boards[boardIndex].lastTick=
-      Date.now();
-
-    return;
-
-  }
-
-
-  /*
-    Consume captured piece.
-  */
-
-  state.hands[player.seat][type]--;
-
-
-  /*
-    chess.js 1.4.0 provides setTurn().
-    Use it instead of manually editing FEN.
-  */
-
-  test.setTurn(
-    seat.color==="w"
-      ? "b"
-      : "w"
-  );
-
-
-  /*
-    A drop is a move, so reset halfmove clock and
-    preserve a valid FEN.
-
-    setTurn changes the active color.
-  */
-
-  state.boards[boardIndex].fen=
-    test.fen();
-
-
-  state.boards[boardIndex].lastTick=
-    Date.now();
-
-
-  /*
-    Checkmate after a drop is a valid game-ending event.
-  */
-
-  if(test.isCheckmate()){
-
-    finishGame(
-      player.name+
-      " delivered checkmate on "+
-      boardName(boardIndex)+"."
-    );
-
-    return;
-
-  }
-
-
-  broadcastState();
-
-}
-
-
-/* ------------------------------------------------------------
-   FIND KING
------------------------------------------------------------- */
-
-function findKing(
-  chess,
-  color
-){
-
-  for(let rank=1;rank<=8;rank++){
-
-    for(
-      let file=0;
-      file<8;
-      file++
-    ){
-
-      const square=
-        String.fromCharCode(
-          97+file
-        )+
-        rank;
-
-
-      const piece=
-        chess.get(square);
-
-
-      if(
-        piece &&
-        piece.type==="k" &&
-        piece.color===color
-      ){
-
-        return square;
-
-      }
-
+      color==="w"?"b":"w"
+    )){
+      return;
     }
-
-  }
-
-
-  return null;
-
-}
-
-
-/* ------------------------------------------------------------
-   REJECT
------------------------------------------------------------- */
-
-function reject(
-  player,
-  message
-){
-
-  const conn=
-    connections.get(
-      player.peerId
-    );
-
-
-  if(
-    conn &&
-    conn.open
-  ){
-
-    conn.send({
-      type:"error",
-      message:message
-    });
-
-  }
-
-
-  if(
-    player.peerId===myPeerId
-  ){
-
-    toast(message);
-
-  }
-
-}
-
-
-/* ------------------------------------------------------------
-   FINISH GAME
------------------------------------------------------------- */
-
-function finishGame(reason){
-
-  if(
-    state.phase==="finished"
-  ){
-
-    return;
-
-  }
-
-
-  state.phase="finished";
-
-  state.reason=reason;
-
-
-  for(
-    const board of state.boards
-  ){
-
-    board.active=false;
-
-    board.lastTick=0;
-
-  }
-
-
-  clearInterval(hostTimer);
-
-  hostTimer=null;
-
-
-  broadcastState();
-
-  renderEverything();
-
-}
-
-
-/* ------------------------------------------------------------
-   CHAT
------------------------------------------------------------- */
-
-function addChat(
-  name,
-  text
-){
-
-  state.chat.push({
-    name:name,
-    text:text,
-    time:Date.now()
-  });
-
-
-  /*
-    Avoid unlimited room memory.
-  */
-
-  if(state.chat.length>200){
-
-    state.chat=
-      state.chat.slice(-200);
-
-  }
-
-
-  broadcastState();
-
-}
-
-
-document
-  .getElementById("chatForm")
-  .addEventListener(
-    "submit",
-    event=>{
-
-      event.preventDefault();
-
-
-      const input=
-        document.getElementById(
-          "chatInput"
-        );
-
-
-      const text=
-        input.value
-          .trim()
-          .slice(0,250);
-
-
-      if(!text) return;
-
-
-      if(isHost){
-
-        const player=me();
-
-        if(player){
-
-          addChat(
-            player.name,
-            text
-          );
-
-        }
-
-      }else{
-
-        if(
-          hostConnection &&
-          hostConnection.open
-        ){
-
-          hostConnection.send({
-            type:"chat",
-            text:text
-          });
-
-        }else{
-
-          toast(
-            "Connection to host lost."
-          );
-
-        }
-
-      }
-
-
-      input.value="";
-
-    }
-  );
-
-
-/* ------------------------------------------------------------
-   COPY ROOM LINK
------------------------------------------------------------- */
-
-document
-  .getElementById("copyButton")
-  .addEventListener(
-    "click",
-    async()=>{
-
-      const input=
-        document.getElementById(
-          "shareUrl"
-        );
-
-
-      try{
-
-        await navigator.clipboard
-          .writeText(input.value);
-
-        toast(
-          "Room link copied."
-        );
-
-      }catch(error){
-
-        input.select();
-
-        document.execCommand(
-          "copy"
-        );
-
-        toast(
-          "Room link copied."
-        );
-
-      }
-
-    }
-  );
-
-
-/* ------------------------------------------------------------
-   SEND GAME ACTION
------------------------------------------------------------- */
-
-function sendAction(action){
-
-  if(!state) return;
-
-
-  if(isHost){
-
-    const player=me();
-
-    if(player){
-
-      processMove(
-        player,
-        action
-      );
-
-    }
-
-    return;
-
-  }
-
-
-  if(
-    !hostConnection ||
-    !hostConnection.open
-  ){
-
-    toast(
-      "Connection to host lost."
-    );
-
-    return;
-
-  }
-
-
-  hostConnection.send(
-    action
-  );
-
-}
-
-
-/* ------------------------------------------------------------
-   RENDER EVERYTHING
------------------------------------------------------------- */
-
-function renderEverything(){
-
-  if(!state) return;
-
-
-  if(state.phase==="lobby"){
-
-    home.classList.add("hidden");
-
-    game.classList.add("hidden");
-
-    lobby.classList.remove("hidden");
-
-    renderLobby();
-
-    return;
-
-  }
-
-
-  if(
-    state.phase==="playing" ||
-    state.phase==="finished"
-  ){
-
-    home.classList.add("hidden");
-
-    lobby.classList.add("hidden");
-
-    game.classList.remove("hidden");
-
-    renderGame();
-
-  }
-
-}
-
-
-/* ------------------------------------------------------------
-   GAME RENDER
------------------------------------------------------------- */
-
-function renderGame(){
-
-  renderPlayers();
-
-  renderBoard(0);
-
-  renderBoard(1);
-
-  renderHand(0);
-
-  renderHand(1);
-
-  renderChat();
-
-  renderClocks();
-
-
-  document
-    .getElementById("matchInfo")
-    .innerHTML=
-      "<b>"+
-      (state.timeControl/60)+
-      "+0</b><br>"+
-      (
-        state.phase==="playing"
-          ? "Match in progress"
-          : "Match finished"
-      );
-
-
-  if(
-    state.phase==="finished"
-  ){
-
-    document
-      .getElementById("gameOverReason")
-      .textContent=
-        state.reason ||
-        "Game over.";
-
-
-    document
-      .getElementById("gameOver")
-      .style.display="grid";
-
-  }
-
-}
-
-
-/* ------------------------------------------------------------
-   PLAYER LIST
------------------------------------------------------------- */
-
-function renderPlayers(){
-
-  document
-    .getElementById("gamePlayers")
-    .innerHTML=
-      state.players
-        .filter(Boolean)
-        .map(player=>{
-
-          const seat=
-            seatInfo(
-              player.seat
-            );
-
-
-          return `
-            <div
-              class="gamePlayer ${
-                player.seat===mySeat
-                  ? "me"
-                  : ""
-              }"
-            >
-
-              <span>
-
-                <b>
-                  ${esc(player.name)}
-                </b>
-
-                ${
-                  player.seat===mySeat
-                    ? " (you)"
-                    : ""
-                }
-
-              </span>
-
-
-              <span
-                class="${
-                  player.team==="A"
-                    ? "teamA"
-                    : "teamB"
-                }"
-              >
-
-                ${player.team}
-                · ${colorName(seat.color)}
-                · ${boardName(seat.board)}
-
-              </span>
-
-            </div>
-          `;
-
-        })
-        .join("");
-
-}
-
-
-/* ------------------------------------------------------------
-   BOARD ORIENTATION
------------------------------------------------------------- */
-
-function boardOrientation(
-  boardIndex
-){
-
-  const player=me();
-
-
-  if(player){
-
-    const seat=
-      seatInfo(player.seat);
-
 
     /*
-      Your own board is oriented from your side.
-
-      If you're Black, you see Black at the bottom.
+      Also prevent dropping a piece directly on an enemy-attacked
+      square. This implements the stricter "don't put a piece in
+      capture" rule requested.
     */
-
-    if(
-      seat.board===boardIndex
-    ){
-
-      return seat.color;
-
-    }
-
-  }
-
-
-  return "w";
-
-}
-
-
-/* ------------------------------------------------------------
-   LEGAL TARGETS
------------------------------------------------------------- */
-
-function getLegalTargets(
-  boardIndex,
-  chess
-){
-
-  const player=me();
-
-  if(!player) return [];
-
-
-  const seat=
-    seatInfo(player.seat);
-
-
-  if(
-    seat.board!==boardIndex
-  ){
-
-    return [];
-
-  }
-
-
-  if(
-    chess.turn()!==seat.color
-  ){
-
-    return [];
-
-  }
-
-
-  /*
-    Drop selection.
-  */
-
-  if(selectedDrop){
-
-    const targets=[];
-
-
-    for(
-      let rank=1;
-      rank<=8;
-      rank++
-    ){
-
-      for(
-        let file=0;
-        file<8;
-        file++
-      ){
-
-        const square=
-          String.fromCharCode(
-            97+file
-          )+
-          rank;
-
-
-        if(chess.get(square)){
-
-          continue;
-
-        }
-
-
-        /*
-          Pawn cannot go on first/last rank.
-        */
-
-        if(
-          selectedDrop==="p" &&
-          (
-            rank===1 ||
-            rank===8
-          )
-        ){
-
-          continue;
-
-        }
-
-
-        const test=
-          new Chess(
-            chess.fen()
-          );
-
-
-        if(
-          !test.put(
-            {
-              type:selectedDrop,
-              color:seat.color
-            },
-            square
-          )
-        ){
-
-          continue;
-
-        }
-
-
-        const king=
-          findKing(
-            test,
-            seat.color
-          );
-
-
-        /*
-          The drop must not leave our own king in check.
-        */
-
-        if(
-          king &&
-          !test.isAttacked(
-            king,
-            seat.color==="w"
-              ? "b"
-              : "w"
-          )
-        ){
-
-          targets.push(square);
-
-        }
-
-      }
-
-    }
-
-
-    return targets;
-
-  }
-
-
-  if(!selectedSquare){
-
-    return [];
-
-  }
-
-
-  const piece=
-    chess.get(
-      selectedSquare
-    );
-
-
-  if(
-    !piece ||
-    piece.color!==seat.color
-  ){
-
-    return [];
-
-  }
-
-
-  return chess
-    .moves({
-      square:selectedSquare,
-      verbose:true
-    })
-    .map(
-      move=>move.to
-    );
-
-}
-
-
-/* ------------------------------------------------------------
-   RENDER BOARD
------------------------------------------------------------- */
-
-function renderBoard(
-  boardIndex
-){
-
-  const container=
-    document.getElementById(
-      "board"+boardIndex
-    );
-
-
-  const chess=
-    new Chess(
-      state.boards[
-        boardIndex
-      ].fen
-    );
-
-
-  const orientation=
-    boardOrientation(
-      boardIndex
-    );
-
-
-  const squares=[];
-
-
-  if(orientation==="w"){
-
-    for(
-      let rank=8;
-      rank>=1;
-      rank--
-    ){
-
-      for(
-        let file=0;
-        file<8;
-        file++
-      ){
-
-        squares.push(
-          String.fromCharCode(
-            97+file
-          )+
-          rank
-        );
-
-      }
-
-    }
-
-  }else{
-
-    for(
-      let rank=1;
-      rank<=8;
-      rank++
-    ){
-
-      for(
-        let file=7;
-        file>=0;
-        file--
-      ){
-
-        squares.push(
-          String.fromCharCode(
-            97+file
-          )+
-          rank
-        );
-
-      }
-
-    }
-
-  }
-
-
-  const legalTargets=
-    getLegalTargets(
-      boardIndex,
-      chess
-    );
-
-
-  const checkedKing=
-    chess.isCheck()
-      ? findKing(
-          chess,
-          chess.turn()
-        )
-      : null;
-
-
-  container.innerHTML=
-    squares.map(
-      square=>{
-
-        const file=
-          square.charCodeAt(0)-97;
-
-        const rank=
-          Number(square[1]);
-
-
-        const isLight=
-          (file+rank)%2===0;
-
-
-        const piece=
-          chess.get(square);
-
-
-        const selected=
-          selectedBoard===boardIndex &&
-          selectedSquare===square;
-
-
-        const legal=
-          legalTargets.includes(
-            square
-          );
-
-
-        const capture=
-          legal &&
-          !!piece;
-
-
-        return `
-          <div
-            class="
-              square
-              ${isLight
-                ? "light"
-                : "dark"}
-              ${selected
-                ? "selected"
-                : ""}
-              ${legal
-                ? "legal"
-                : ""}
-              ${capture
-                ? "capture"
-                : ""}
-              ${
-                checkedKing===square
-                  ? "check"
-                  : ""
-              }
-            "
-            data-board="${boardIndex}"
-            data-square="${square}"
-          >
-
-            ${
-              piece
-
-                ? `
-
-                  <span
-                    class="
-                      piece
-                      ${
-                        piece.color==="w"
-                          ? "whitePiece"
-                          : "blackPiece"
-                      }
-                    "
-                  >
-                    ${SYMBOL[piece.type]}
-                  </span>
-
-                `
-
-                : ""
-            }
-
-
-            ${
-              file===
-              (
-                orientation==="w"
-                  ? 0
-                  : 7
-              )
-
-                ? `
-                  <span
-                    class="coord rank"
-                  >
-                    ${rank}
-                  </span>
-                `
-
-                : ""
-            }
-
-
-            ${
-              rank===
-              (
-                orientation==="w"
-                  ? 1
-                  : 8
-              )
-
-                ? `
-                  <span
-                    class="coord file"
-                  >
-                    ${String.fromCharCode(
-                      97+file
-                    )}
-                  </span>
-                `
-
-                : ""
-            }
-
-          </div>
-        `;
-
-      }
-    ).join("");
-
-
-  container
-    .querySelectorAll(".square")
-    .forEach(square=>{
-
-      square.addEventListener(
-        "click",
-        squareClicked
-      );
-
-    });
-
-
-  renderTurn(
-    boardIndex,
-    chess
-  );
-
-}
-
-
-/* ------------------------------------------------------------
-   SQUARE CLICK
------------------------------------------------------------- */
-
-function squareClicked(event){
-
-  if(
-    !state ||
-    state.phase!=="playing"
-  ){
-
-    return;
-
-  }
-
-
-  const boardIndex=
-    Number(
-      event.currentTarget
-        .dataset.board
-    );
-
-
-  const square=
-    event.currentTarget
-      .dataset.square;
-
-
-  const player=me();
-
-  if(!player) return;
-
-
-  const seat=
-    seatInfo(player.seat);
-
-
-  if(
-    seat.board!==boardIndex
-  ){
-
-    return;
-
-  }
-
-
-  const chess=
-    new Chess(
-      state.boards[
-        boardIndex
-      ].fen
-    );
-
-
-  if(
-    chess.turn()!==seat.color
-  ){
-
-    toast(
-      "It is not your turn."
-    );
-
-    return;
-
-  }
-
-
-  /*
-    DROP
-  */
-
-  if(selectedDrop){
-
-    const targets=
-      getLegalTargets(
-        boardIndex,
-        chess
-      );
-
-
-    if(
-      !targets.includes(square)
-    ){
-
-      toast(
-        "Illegal drop."
-      );
-
+    if(game.isAttacked(
+      square,
+      color==="w"?"b":"w"
+    )){
       return;
-
     }
 
+    // A drop does not consume a chess turn unless it is that side's turn.
+    if(game.turn()!==color)return;
 
-    sendAction({
-      kind:"drop",
-      piece:selectedDrop,
-      to:square
-    });
+    /*
+      chess.js does not have bughouse drops, so we now construct
+      the resulting FEN and advance the turn.
+    */
+    game.setTurn(color==="w"?"b":"w");
 
+    state.games[board].fen=game.fen();
 
-    clearSelection();
+    pocket[type]--;
 
+  }catch(e){
+    console.error(e);
     return;
-
   }
 
+  state.lastClockUpdate=Date.now();
+}
 
-  const piece=
-    chess.get(square);
+/* =========================================================
+   CLOCK
+   ========================================================= */
 
+function updateClocks(){
 
-  /*
-    Nothing selected:
-    select own piece.
-  */
+  if(!isHost || !state || !state.started || state.ended)return;
 
-  if(!selectedSquare){
+  const now=Date.now();
+  const elapsed=now-state.lastClockUpdate;
 
-    if(
-      piece &&
-      piece.color===seat.color
-    ){
+  if(elapsed<=0)return;
 
-      selectedSquare=square;
+  for(let b=0;b<2;b++){
 
-      selectedBoard=boardIndex;
+    const game=new Chess(state.games[b].fen);
+    const color=game.turn()==="w"?0:1;
 
-      renderBoard(
-        boardIndex
-      );
+    state.clocks[b][color]-=elapsed;
 
-    }
+    if(state.clocks[b][color]<=0){
 
-    return;
+      state.clocks[b][color]=0;
+      state.ended=true;
 
-  }
-
-
-  /*
-    Click another own piece:
-    change selection.
-  */
-
-  if(
-    piece &&
-    piece.color===seat.color
-  ){
-
-    selectedSquare=square;
-
-    selectedBoard=boardIndex;
-
-    renderBoard(
-      boardIndex
-    );
-
-    return;
-
-  }
-
-
-  const legalMoves=
-    chess.moves({
-      square:selectedSquare,
-      verbose:true
-    });
-
-
-  const move=
-    legalMoves.find(
-      m=>m.to===square
-    );
-
-
-  if(!move){
-
-    clearSelection();
-
-    toast(
-      "Illegal move."
-    );
-
-    return;
-
-  }
-
-
-  let promotion=null;
-
-
-  if(
-    move.piece==="p" &&
-    (
-      square.endsWith("1") ||
-      square.endsWith("8")
-    )
-  ){
-
-    const answer=
-      prompt(
-        "Promote to Q, R, B or N:",
-        "Q"
-      );
-
-
-    if(answer===null){
-
-      clearSelection();
-
+      state.lastClockUpdate=now;
       return;
-
     }
-
-
-    promotion=
-      answer
-        .trim()
-        .toLowerCase();
-
-
-    if(
-      !["q","r","b","n"]
-        .includes(promotion)
-    ){
-
-      toast(
-        "Invalid promotion."
-      );
-
-      clearSelection();
-
-      return;
-
-    }
-
   }
 
-
-  sendAction({
-
-    kind:"move",
-
-    from:selectedSquare,
-
-    to:square,
-
-    promotion:promotion
-
-  });
-
-
-  clearSelection();
-
+  state.lastClockUpdate=now;
 }
-
-
-/* ------------------------------------------------------------
-   CLEAR SELECTION
------------------------------------------------------------- */
-
-function clearSelection(){
-
-  selectedSquare=null;
-
-  selectedDrop=null;
-
-  selectedBoard=null;
-
-
-  if(
-    state &&
-    state.phase==="playing"
-  ){
-
-    renderBoard(0);
-
-    renderBoard(1);
-
-    renderHand(0);
-
-    renderHand(1);
-
-  }
-
-}
-
-
-/* ------------------------------------------------------------
-   HAND
------------------------------------------------------------- */
-
-function renderHand(
-  boardIndex
-){
-
-  const container=
-    document.getElementById(
-      "hand"+boardIndex
-    );
-
-
-  container.innerHTML=
-    `
-      <span class="handTitle">
-        Drops
-      </span>
-    `;
-
-
-  const player=me();
-
-  if(!player) return;
-
-
-  const seat=
-    seatInfo(player.seat);
-
-
-  /*
-    Only show the pieces that belong to the
-    player controlling this board.
-  */
-
-  if(
-    seat.board!==boardIndex
-  ){
-
-    return;
-
-  }
-
-
-  for(
-    const type of PIECES
-  ){
-
-    const count=
-      state.hands[
-        player.seat
-      ][type];
-
-
-    if(count<=0) continue;
-
-
-    const button=
-      document.createElement(
-        "button"
-      );
-
-
-    button.className=
-      "handPiece";
-
-
-    if(
-      selectedDrop===type &&
-      selectedBoard===boardIndex
-    ){
-
-      button.classList.add(
-        "selected"
-      );
-
-    }
-
-
-    button.innerHTML=
-      `
-        <span
-          class="
-            mini
-            ${
-              seat.color==="w"
-                ? "whitePiece"
-                : "blackPiece"
-            }
-          "
-        >
-          ${SYMBOL[type]}
-        </span>
-
-        <span class="count">
-          ${count}
-        </span>
-      `;
-
-
-    button.addEventListener(
-      "click",
-      ()=>{
-
-        if(
-          selectedDrop===type &&
-          selectedBoard===boardIndex
-        ){
-
-          clearSelection();
-
-          return;
-
-        }
-
-
-        selectedDrop=type;
-
-        selectedSquare=null;
-
-        selectedBoard=boardIndex;
-
-
-        renderBoard(
-          boardIndex
-        );
-
-
-        renderHand(
-          boardIndex
-        );
-
-      }
-    );
-
-
-    container.appendChild(
-      button
-    );
-
-  }
-
-}
-
-
-/* ------------------------------------------------------------
-   TURN DISPLAY
------------------------------------------------------------- */
-
-function renderTurn(
-  boardIndex,
-  chess
-){
-
-  const element=
-    document.getElementById(
-      "turn"+boardIndex
-    );
-
-
-  if(
-    state.phase==="finished"
-  ){
-
-    element.textContent=
-      "Finished";
-
-    return;
-
-  }
-
-
-  const player=
-    state.players.find(
-      p=>{
-
-        if(!p) return false;
-
-
-        const seat=
-          seatInfo(p.seat);
-
-
-        return (
-          seat.board===boardIndex &&
-          seat.color===chess.turn()
-        );
-
-      }
-    );
-
-
-  element.textContent=
-    player
-      ? (
-          player.name+
-          " · "+
-          colorName(
-            chess.turn()
-          )+
-          " to move"
-        )
-      : (
-          colorName(
-            chess.turn()
-          )+
-          " to move"
-        );
-
-}
-
-
-/* ------------------------------------------------------------
-   CLOCK DISPLAY
------------------------------------------------------------- */
-
-function getDisplayedClock(
-  boardIndex
-){
-
-  const board=
-    state.boards[
-      boardIndex
-    ];
-
-
-  let time=
-    board.clock;
-
-
-  /*
-    Client-side display only.
-
-    The host remains authoritative.
-  */
-
-  if(
-    state.phase==="playing" &&
-    board.active &&
-    board.lastTick
-  ){
-
-    time-=
-      Date.now()-
-      board.lastTick;
-
-  }
-
-
-  return Math.max(
-    0,
-    time
-  );
-
-}
-
 
 function renderClocks(){
 
-  for(
-    let i=0;
-    i<2;
-    i++
-  ){
+  if(!state || !state.started)return;
 
-    const element=
-      document.getElementById(
-        "clock"+i
-      );
-
-
-    const time=
-      getDisplayedClock(i);
-
-
-    element.textContent=
-      formatTime(time);
-
-
-    const chess=
-      new Chess(
-        state.boards[i].fen
-      );
-
-
-    const player=me();
-
-
-    let active=false;
-
-
-    if(player){
-
-      const seat=
-        seatInfo(player.seat);
-
-
-      active=
-        seat.board===i &&
-        seat.color===chess.turn();
-
-    }
-
-
-    element.classList.toggle(
-      "active",
-      active &&
-      state.phase==="playing"
-    );
-
-
-    element.classList.toggle(
-      "low",
-      time<=10000
-    );
-
+  if(isHost && !state.ended){
+    updateClocks();
   }
 
-}
+  for(let b=0;b<2;b++){
 
+    const game=new Chess(state.games[b].fen);
 
-/* ------------------------------------------------------------
-   CHAT DISPLAY
------------------------------------------------------------- */
+    const w=state.clocks[b][0];
+    const bl=state.clocks[b][1];
 
-function renderChat(){
+    const whiteSeat=b===0?0:2;
+    const blackSeat=b===0?1:3;
 
-  const box=
-    document.getElementById(
-      "chatMessages"
-    );
+    // Display both clocks using board title.
+    const title=document.querySelector(
+      `#board${b+1}`
+    )?.parentElement;
 
+    if(!title)continue;
 
-  const stickToBottom=
-    box.scrollHeight-
-    box.scrollTop-
-    box.clientHeight<
-    50;
+    let old=title.querySelector(".dual-clock");
 
+    if(!old){
+      old=document.createElement("div");
+      old.className="dual-clock";
+      old.style.display="flex";
+      old.style.justifyContent="space-between";
+      old.style.marginTop="8px";
+      title.appendChild(old);
+    }
 
-  box.innerHTML=
-    state.chat
-      .map(message=>{
-
-        const time=
-          new Date(
-            message.time
-          )
-          .toLocaleTimeString(
-            [],
-            {
-              hour:"2-digit",
-              minute:"2-digit"
-            }
-          );
-
-
-        return `
-          <div class="message">
-
-            <span class="messageName">
-              ${esc(message.name)}
-            </span>
-
-            <span class="messageTime">
-              ${time}
-            </span>
-
-            <br>
-
-            ${esc(message.text)}
-
-          </div>
-        `;
-
-      })
-      .join("");
-
-
-  if(stickToBottom){
-
-    box.scrollTop=
-      box.scrollHeight;
-
+    old.innerHTML=`
+      <span class="clock ${game.turn()==="w"?"active":""} ${w<10000?"low":""}">
+        ${formatTime(w)} ${escapeHtml(state.players[whiteSeat]?.name||"")}
+      </span>
+      <span class="clock ${game.turn()==="b"?"active":""} ${bl<10000?"low":""}">
+        ${formatTime(bl)} ${escapeHtml(state.players[blackSeat]?.name||"")}
+      </span>
+    `;
   }
 
+  if(isHost){
+    broadcastState();
+  }
 }
 
+function formatTime(ms){
 
-/* ------------------------------------------------------------
-   GAME OVER CLOSE
------------------------------------------------------------- */
+  ms=Math.max(0,ms);
 
-document
-  .getElementById("gameOverClose")
-  .addEventListener(
-    "click",
-    ()=>{
+  const total=Math.ceil(ms/1000);
 
-      document
-        .getElementById(
-          "gameOver"
-        )
-        .style.display="none";
+  const min=Math.floor(total/60);
+  const sec=total%60;
 
+  return `${String(min).padStart(2,"0")}:${String(sec).padStart(2,"0")}`;
+}
+
+/* =========================================================
+   PLAYERS / STATUS
+   ========================================================= */
+
+function renderPlayers(){
+
+  const el=$("gamePlayers");
+  el.innerHTML="";
+
+  const roles=[
+    "B1 White",
+    "B1 Black",
+    "B2 White",
+    "B2 Black"
+  ];
+
+  for(let i=0;i<4;i++){
+
+    const p=state.players[i];
+
+    if(!p)continue;
+
+    const div=document.createElement("div");
+
+    div.className="player";
+
+    div.innerHTML=`
+      <span>
+        ${escapeHtml(p.name)}
+        ${i===mySeat?" <b>(you)</b>":""}
+      </span>
+      <span>Team ${state.teams[i]}</span>
+    `;
+
+    el.appendChild(div);
+  }
+}
+
+function renderStatus(){
+
+  let text="Match in progress.";
+
+  if(state.ended){
+    text="Game over.";
+  }else{
+
+    const game0=new Chess(state.games[0].fen);
+    const game1=new Chess(state.games[1].fen);
+
+    if(game0.isCheckmate()){
+      text="Board 1 checkmate.";
+    }else if(game1.isCheckmate()){
+      text="Board 2 checkmate.";
+    }else if(game0.isCheck()){
+      text="Board 1 is in check.";
+    }else if(game1.isCheck()){
+      text="Board 2 is in check.";
     }
-  );
+  }
 
+  $("gameStatus").textContent=text;
+}
 
-/* ------------------------------------------------------------
-   SMOOTH LOCAL CLOCK
------------------------------------------------------------- */
+/* =========================================================
+   CHAT
+   ========================================================= */
 
-setInterval(
-  ()=>{
+function addChat(name,message){
 
-    if(
-      state &&
-      (
-        state.phase==="playing" ||
-        state.phase==="finished"
-      )
-    ){
+  if(!message)return;
 
-      renderClocks();
+  message=String(message)
+    .trim()
+    .slice(0,250);
 
-    }
+  if(!message)return;
 
-  },
-  100
-);
+  state.chat.push({
+    name:String(name||"Player").slice(0,20),
+    message
+  });
 
+  if(state.chat.length>100){
+    state.chat.shift();
+  }
 
-/* ------------------------------------------------------------
-   PAGE VISIBILITY
------------------------------------------------------------- */
+  broadcast({
+    type:"chat",
+    name,
+    message
+  });
 
-document.addEventListener(
-  "visibilitychange",
-  ()=>{
+  // Host also renders locally.
+  addChatLocal(name,message);
+}
 
-    if(
-      !document.hidden &&
-      state
-    ){
+function addChatLocal(name,message){
 
-      renderEverything();
+  const box=$("chatMessages");
 
-    }
+  const div=document.createElement("div");
+
+  div.className="msg";
+
+  div.innerHTML=
+    `<b>${escapeHtml(name)}</b>: `+
+    `${escapeHtml(message)}`;
+
+  box.appendChild(div);
+
+  while(box.children.length>100){
+    box.removeChild(box.firstChild);
+  }
+
+  box.scrollTop=box.scrollHeight;
+}
+
+function addSystemMessage(message){
+
+  const box=$("chatMessages");
+
+  const div=document.createElement("div");
+
+  div.className="msg system";
+
+  div.innerHTML=
+    `<b>System:</b> ${escapeHtml(message)}`;
+
+  box.appendChild(div);
+  box.scrollTop=box.scrollHeight;
+}
+
+$("sendChat").onclick=sendChat;
+
+$("chatInput").addEventListener("keydown",e=>{
+  if(e.key==="Enter")sendChat();
+});
+
+function sendChat(){
+
+  const input=$("chatInput");
+  const message=input.value.trim();
+
+  if(!message)return;
+
+  input.value="";
+
+  if(isHost){
+    addChat(myName,message);
+  }else{
+    sendToHost({
+      type:"chat",
+      name:myName,
+      message
+    });
+
+    addChatLocal(myName,message);
+  }
+}
+
+/* =========================================================
+   PROMOTION
+   ========================================================= */
+
+document.querySelectorAll("[data-promo]").forEach(button=>{
+
+  button.onclick=()=>{
+
+    if(!promotionMove)return;
+
+    const promotion=button.dataset.promo;
+
+    sendAction({
+      type:"move",
+      board:promotionMove.board,
+      from:promotionMove.from,
+      to:promotionMove.to,
+      promotion
+    });
+
+    promotionMove=null;
+
+    $("promotion").classList.add("hidden");
+    selectedSquare=null;
+  };
+
+});
+
+/* =========================================================
+   SEND ACTION
+   ========================================================= */
+
+function sendAction(action){
+
+  if(isHost){
+
+    handleAction(action,mySeat);
+
+  }else{
+
+    sendToHost({
+      type:"action",
+      action
+    });
 
   }
-);
-
-
-/* ------------------------------------------------------------
-   INITIAL URL
------------------------------------------------------------- */
-
-const initialRoom=
-  new URLSearchParams(
-    location.search
-  ).get("room");
-
-
-if(initialRoom){
-
-  document
-    .getElementById(
-      "homeButton"
-    )
-    .textContent=
-      "Join room";
-
 }
 
+/* =========================================================
+   COPY ROOM
+   ========================================================= */
 
-/* ------------------------------------------------------------
-   INITIAL STATUS
------------------------------------------------------------- */
+$("copyLink").onclick=async()=>{
 
-setStatus(
-  "Ready",
-  "#94a1b1"
-);
+  const input=$("shareLink");
+
+  try{
+    await navigator.clipboard.writeText(input.value);
+
+    $("copyLink").textContent="Copied!";
+
+    setTimeout(()=>{
+      $("copyLink").textContent="Copy";
+    },1500);
+
+  }catch(e){
+
+    input.select();
+    document.execCommand("copy");
+
+  }
+};
+
+/* =========================================================
+   UTILITIES
+   ========================================================= */
+
+function escapeHtml(str){
+
+  return String(str??"")
+    .replaceAll("&","&amp;")
+    .replaceAll("<","&lt;")
+    .replaceAll(">","&gt;")
+    .replaceAll('"',"&quot;")
+    .replaceAll("'","&#039;");
+}
+
+/* =========================================================
+   STARTUP
+   ========================================================= */
+
+renderLobby();
+
+if(invitedRoom){
+  setStatus("Enter your username, then click Join Room.");
+}else{
+  setStatus("Choose a username and create a room.");
+}
+
+/*
+   When the host changes state, redraw everything.
+*/
+setInterval(()=>{
+  if(state && state.started){
+    initLocalGames();
+    renderBoards();
+    renderPlayers();
+    renderStatus();
+  }
+},500);
 
 </script>
-
 </body>
 </html>
