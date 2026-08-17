@@ -1,0 +1,4894 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#0b1017">
+
+<title>Bughouse</title>
+
+<!--
+  External libraries are loaded over HTTPS.
+
+  PeerJS:
+  Provides WebRTC peer-to-peer connections and free signaling.
+
+  chess.js:
+  Provides standard chess move legality/check/checkmate handling.
+-->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/peerjs/1.5.5/peerjs.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/chess.js/1.4.0/chess.min.js"></script>
+
+<style>
+*{
+  box-sizing:border-box;
+}
+
+:root{
+  --bg:#080c12;
+  --panel:#121923;
+  --panel2:#182230;
+  --border:#2b3848;
+  --text:#f5f7fa;
+  --muted:#94a1b1;
+  --blue:#4c9cff;
+  --blue2:#2878d8;
+  --red:#ff6478;
+  --green:#46df93;
+  --yellow:#ffd34d;
+
+  --light:#f0d9b5;
+  --dark:#b58863;
+}
+
+html,
+body{
+  margin:0;
+  min-height:100%;
+  background:
+    radial-gradient(
+      circle at top,
+      #223249 0,
+      #080c12 55%
+    );
+  color:var(--text);
+  font-family:
+    system-ui,
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    sans-serif;
+}
+
+body{
+  min-height:100vh;
+}
+
+button,
+input,
+select{
+  font:inherit;
+}
+
+button{
+  cursor:pointer;
+}
+
+button:disabled{
+  cursor:not-allowed;
+  opacity:.45;
+}
+
+.hidden{
+  display:none!important;
+}
+
+.app{
+  width:min(1500px,100%);
+  margin:auto;
+  padding:18px;
+}
+
+header{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:15px;
+  margin-bottom:18px;
+}
+
+.logo{
+  font-size:30px;
+  font-weight:950;
+  letter-spacing:-1px;
+}
+
+.logo span{
+  color:var(--blue);
+}
+
+.status{
+  color:var(--muted);
+  font-size:13px;
+}
+
+.card{
+  background:rgba(18,25,35,.97);
+  border:1px solid var(--border);
+  border-radius:16px;
+  box-shadow:0 18px 60px #0007;
+}
+
+/* HOME */
+
+#home{
+  width:min(600px,100%);
+  margin:7vh auto;
+  padding:32px;
+}
+
+#home h1{
+  margin:0;
+  font-size:46px;
+  line-height:1;
+}
+
+#home h1 span{
+  color:var(--blue);
+}
+
+#home .subtitle{
+  color:var(--muted);
+  line-height:1.6;
+  margin:18px 0 28px;
+}
+
+.field{
+  margin:18px 0;
+}
+
+label{
+  display:block;
+  color:var(--muted);
+  font-size:13px;
+  margin-bottom:7px;
+}
+
+input,
+select{
+  width:100%;
+  padding:13px 14px;
+  color:white;
+  background:#0b1118;
+  border:1px solid #354354;
+  border-radius:10px;
+  outline:none;
+}
+
+input:focus,
+select:focus{
+  border-color:var(--blue);
+  box-shadow:0 0 0 3px #4c9cff18;
+}
+
+.primary{
+  width:100%;
+  border:0;
+  border-radius:10px;
+  padding:14px;
+  color:white;
+  font-weight:850;
+  background:
+    linear-gradient(
+      135deg,
+      var(--blue),
+      #6757df
+    );
+}
+
+.secondary{
+  border:1px solid #3b495b;
+  background:#202b39;
+  color:white;
+  border-radius:9px;
+  padding:10px 14px;
+}
+
+.error{
+  min-height:20px;
+  color:#ff8495;
+  font-size:13px;
+  margin-top:10px;
+}
+
+.small{
+  color:var(--muted);
+  font-size:12px;
+  line-height:1.5;
+}
+
+.notice{
+  padding:12px;
+  background:#0e1c2c;
+  border:1px solid #264a70;
+  color:#b7d7ff;
+  border-radius:10px;
+  font-size:13px;
+  line-height:1.5;
+}
+
+/* LOBBY */
+
+#lobby{
+  padding:20px;
+}
+
+.lobbyGrid{
+  display:grid;
+  grid-template-columns:minmax(0,1.5fr) minmax(260px,.7fr);
+  gap:20px;
+}
+
+@media(max-width:850px){
+  .lobbyGrid{
+    grid-template-columns:1fr;
+  }
+}
+
+.roomLink{
+  display:flex;
+  gap:8px;
+  margin:15px 0;
+}
+
+.roomLink input{
+  min-width:0;
+}
+
+.players{
+  display:grid;
+  gap:8px;
+  margin-top:15px;
+}
+
+.playerRow{
+  display:grid;
+  grid-template-columns:minmax(0,1fr) 170px;
+  align-items:center;
+  gap:10px;
+  padding:11px;
+  background:#0d141d;
+  border:1px solid var(--border);
+  border-radius:10px;
+}
+
+.playerSeat{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  min-width:0;
+}
+
+.seat{
+  flex:0 0 36px;
+  width:36px;
+  height:36px;
+  display:grid;
+  place-items:center;
+  border-radius:8px;
+  background:#273342;
+  font-weight:900;
+}
+
+.teamA{
+  color:#67b0ff;
+}
+
+.teamB{
+  color:#ff8192;
+}
+
+/* GAME */
+
+.gameLayout{
+  display:grid;
+  grid-template-columns:minmax(0,1fr) 330px;
+  gap:18px;
+}
+
+@media(max-width:1100px){
+  .gameLayout{
+    grid-template-columns:1fr;
+  }
+}
+
+.boards{
+  display:grid;
+  grid-template-columns:repeat(2,minmax(280px,1fr));
+  gap:18px;
+}
+
+@media(max-width:760px){
+  .boards{
+    grid-template-columns:1fr;
+  }
+}
+
+.boardPanel{
+  padding:12px;
+  background:var(--panel);
+  border:1px solid var(--border);
+  border-radius:15px;
+}
+
+.boardHeader{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:10px;
+  margin-bottom:9px;
+}
+
+.boardTitle{
+  font-weight:900;
+}
+
+.turn{
+  color:var(--muted);
+  font-size:12px;
+  margin-top:3px;
+}
+
+.clock{
+  min-width:80px;
+  padding:6px 9px;
+  border-radius:8px;
+  background:#06090d;
+  text-align:center;
+  font-size:25px;
+  font-weight:950;
+}
+
+.clock.active{
+  color:var(--green);
+}
+
+.clock.low{
+  color:var(--red);
+}
+
+.board{
+  width:100%;
+  aspect-ratio:1;
+  display:grid;
+  grid-template-columns:repeat(8,1fr);
+  overflow:hidden;
+  border-radius:9px;
+  user-select:none;
+}
+
+.square{
+  position:relative;
+  display:grid;
+  place-items:center;
+  font-size:clamp(30px,5vw,58px);
+  cursor:pointer;
+}
+
+.light{
+  background:var(--light);
+}
+
+.dark{
+  background:var(--dark);
+}
+
+.square.selected{
+  box-shadow:
+    inset 0 0 0 5px var(--yellow);
+}
+
+.square.legal::after{
+  content:"";
+  position:absolute;
+  width:23%;
+  height:23%;
+  border-radius:50%;
+  background:#36c65eaa;
+}
+
+.square.capture::after{
+  content:"";
+  position:absolute;
+  width:72%;
+  height:72%;
+  border-radius:50%;
+  border:5px solid #df455baa;
+}
+
+.square.check{
+  background:#d44f4f!important;
+}
+
+.piece{
+  position:relative;
+  z-index:2;
+  line-height:1;
+}
+
+.whitePiece{
+  color:#fff;
+  text-shadow:
+    0 1px 0 #111,
+    1px 0 #111,
+    -1px 0 #111,
+    0 -1px #111;
+}
+
+.blackPiece{
+  color:#111;
+}
+
+.coord{
+  position:absolute;
+  z-index:3;
+  font-size:9px;
+  font-weight:900;
+  opacity:.6;
+}
+
+.coord.rank{
+  top:2px;
+  left:3px;
+}
+
+.coord.file{
+  right:3px;
+  bottom:2px;
+}
+
+/* HAND */
+
+.hand{
+  min-height:53px;
+  display:flex;
+  align-items:center;
+  flex-wrap:wrap;
+  gap:5px;
+  margin-top:8px;
+  padding:6px;
+  background:#0b1118;
+  border-radius:8px;
+}
+
+.handTitle{
+  margin-right:4px;
+  color:var(--muted);
+  font-size:11px;
+}
+
+.handPiece{
+  min-width:43px;
+  height:40px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:2px;
+  border:1px solid #3a4859;
+  border-radius:8px;
+  background:#1d2835;
+}
+
+.handPiece.selected{
+  outline:3px solid var(--yellow);
+}
+
+.mini{
+  font-size:27px;
+}
+
+.count{
+  color:var(--yellow);
+  font-size:12px;
+  font-weight:950;
+}
+
+/* SIDEBAR */
+
+.sidebar{
+  display:flex;
+  flex-direction:column;
+  gap:14px;
+}
+
+.sideCard{
+  padding:15px;
+}
+
+.sideTitle{
+  margin-bottom:10px;
+  font-weight:900;
+}
+
+.gamePlayers{
+  display:grid;
+  gap:7px;
+}
+
+.gamePlayer{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:6px;
+  padding:9px;
+  background:#0d141d;
+  border:1px solid var(--border);
+  border-radius:8px;
+  font-size:12px;
+}
+
+.gamePlayer.me{
+  border-color:var(--blue);
+}
+
+.chat{
+  height:430px;
+  display:flex;
+  flex-direction:column;
+}
+
+.chatMessages{
+  flex:1;
+  min-height:0;
+  overflow:auto;
+  padding:9px;
+  background:#0b1118;
+  border-radius:9px;
+}
+
+.message{
+  margin-bottom:10px;
+  word-break:break-word;
+}
+
+.messageName{
+  color:var(--blue);
+  font-size:12px;
+  font-weight:900;
+}
+
+.messageTime{
+  color:#687583;
+  font-size:10px;
+}
+
+.chatForm{
+  display:flex;
+  gap:7px;
+  margin-top:8px;
+}
+
+.chatForm input{
+  min-width:0;
+}
+
+.chatForm button{
+  width:54px;
+}
+
+/* GAME OVER */
+
+#gameOver{
+  position:fixed;
+  inset:0;
+  z-index:50;
+  display:none;
+  place-items:center;
+  background:#000b;
+  backdrop-filter:blur(5px);
+}
+
+.gameOverBox{
+  width:min(450px,90%);
+  padding:30px;
+  text-align:center;
+  background:var(--panel);
+  border:1px solid #465365;
+  border-radius:16px;
+}
+
+.gameOverBox h2{
+  margin:0 0 10px;
+  font-size:32px;
+}
+
+#toast{
+  position:fixed;
+  left:50%;
+  bottom:20px;
+  z-index:100;
+  display:none;
+  transform:translateX(-50%);
+  padding:11px 17px;
+  background:#273443;
+  border:1px solid #48576a;
+  border-radius:9px;
+  box-shadow:0 10px 30px #0008;
+}
+</style>
+</head>
+
+<body>
+
+<div class="app">
+
+<header>
+  <div class="logo">
+    BUG<span>HOUSE</span>
+  </div>
+
+  <div class="status" id="status">
+    Ready
+  </div>
+</header>
+
+
+<!-- =========================
+     HOME
+========================= -->
+
+<section id="home" class="card">
+
+  <h1>
+    Bug<span>house</span>
+  </h1>
+
+  <p class="subtitle">
+    Four players. Two boards. Captured pieces are
+    passed to your teammate.
+  </p>
+
+  <div class="field">
+
+    <label for="username">
+      Username
+    </label>
+
+    <input
+      id="username"
+      maxlength="20"
+      autocomplete="off"
+      placeholder="Choose a username"
+    >
+
+  </div>
+
+
+  <div class="field">
+
+    <label for="timeControl">
+      Time control
+    </label>
+
+    <select id="timeControl">
+
+      <option value="120">
+        2 + 0
+      </option>
+
+      <option value="180">
+        3 + 0
+      </option>
+
+      <option value="300">
+        5 + 0
+      </option>
+
+    </select>
+
+  </div>
+
+
+  <button
+    id="homeButton"
+    class="primary"
+  >
+    Create room
+  </button>
+
+
+  <div
+    id="homeError"
+    class="error"
+  ></div>
+
+
+  <p class="small">
+    No player account is required.
+    Choose a username, create or join a room,
+    and play.
+  </p>
+
+</section>
+
+
+<!-- =========================
+     LOBBY
+========================= -->
+
+<section
+  id="lobby"
+  class="card hidden"
+>
+
+  <div class="lobbyGrid">
+
+    <div>
+
+      <h2 style="margin-top:0">
+        Game lobby
+      </h2>
+
+      <div
+        class="small"
+        id="roomText"
+      ></div>
+
+
+      <div class="roomLink">
+
+        <input
+          id="shareUrl"
+          readonly
+        >
+
+        <button
+          id="copyButton"
+          class="secondary"
+        >
+          Copy
+        </button>
+
+      </div>
+
+
+      <div class="notice">
+
+        Send this link to your three friends.
+        The host chooses the teams and starts
+        the match.
+
+      </div>
+
+
+      <div
+        class="players"
+        id="lobbyPlayers"
+      ></div>
+
+    </div>
+
+
+    <div>
+
+      <h3>
+        Match settings
+      </h3>
+
+
+      <div class="field">
+
+        <label for="lobbyTime">
+          Time control
+        </label>
+
+        <select id="lobbyTime">
+
+          <option value="120">
+            2 + 0
+          </option>
+
+          <option value="180">
+            3 + 0
+          </option>
+
+          <option value="300">
+            5 + 0
+          </option>
+
+        </select>
+
+      </div>
+
+
+      <button
+        id="startButton"
+        class="primary"
+      >
+        Start match
+      </button>
+
+
+      <div
+        id="lobbyError"
+        class="error"
+      ></div>
+
+    </div>
+
+  </div>
+
+</section>
+
+
+<!-- =========================
+     GAME
+========================= -->
+
+<section
+  id="game"
+  class="hidden"
+>
+
+  <div class="gameLayout">
+
+
+    <div class="boards">
+
+
+      <!-- BOARD 1 -->
+
+      <div class="boardPanel">
+
+        <div class="boardHeader">
+
+          <div>
+
+            <div class="boardTitle">
+              Board 1
+            </div>
+
+            <div
+              class="turn"
+              id="turn0"
+            ></div>
+
+          </div>
+
+          <div
+            class="clock"
+            id="clock0"
+          >
+            2:00
+          </div>
+
+        </div>
+
+
+        <div
+          class="board"
+          id="board0"
+        ></div>
+
+
+        <div
+          class="hand"
+          id="hand0"
+        >
+
+          <span class="handTitle">
+            Drops
+          </span>
+
+        </div>
+
+      </div>
+
+
+      <!-- BOARD 2 -->
+
+      <div class="boardPanel">
+
+        <div class="boardHeader">
+
+          <div>
+
+            <div class="boardTitle">
+              Board 2
+            </div>
+
+            <div
+              class="turn"
+              id="turn1"
+            ></div>
+
+          </div>
+
+          <div
+            class="clock"
+            id="clock1"
+          >
+            2:00
+          </div>
+
+        </div>
+
+
+        <div
+          class="board"
+          id="board1"
+        ></div>
+
+
+        <div
+          class="hand"
+          id="hand1"
+        >
+
+          <span class="handTitle">
+            Drops
+          </span>
+
+        </div>
+
+      </div>
+
+
+    </div>
+
+
+    <!-- SIDEBAR -->
+
+    <aside class="sidebar">
+
+
+      <div class="card sideCard">
+
+        <div class="sideTitle">
+          Players
+        </div>
+
+        <div
+          id="gamePlayers"
+          class="gamePlayers"
+        ></div>
+
+      </div>
+
+
+      <div class="card sideCard">
+
+        <div class="sideTitle">
+          Chat
+        </div>
+
+
+        <div class="chat">
+
+          <div
+            id="chatMessages"
+            class="chatMessages"
+          ></div>
+
+
+          <form
+            id="chatForm"
+            class="chatForm"
+          >
+
+            <input
+              id="chatInput"
+              maxlength="250"
+              autocomplete="off"
+              placeholder="Chat..."
+            >
+
+            <button class="secondary">
+              ➤
+            </button>
+
+          </form>
+
+        </div>
+
+      </div>
+
+
+      <div class="card sideCard">
+
+        <div class="sideTitle">
+          Match
+        </div>
+
+        <div
+          id="matchInfo"
+          class="small"
+        ></div>
+
+      </div>
+
+
+    </aside>
+
+  </div>
+
+</section>
+
+</div>
+
+
+<!-- GAME OVER -->
+
+<div id="gameOver">
+
+  <div class="gameOverBox">
+
+    <h2 id="gameOverTitle">
+      Game over
+    </h2>
+
+    <p id="gameOverReason"></p>
+
+    <button
+      id="gameOverClose"
+      class="primary"
+    >
+      Close
+    </button>
+
+  </div>
+
+</div>
+
+
+<div id="toast"></div>
+
+
+<script>
+"use strict";
+
+/*
+===============================================================
+ BUGHOUSE
+ Single-file client
+===============================================================
+
+ NO LOGIN
+ NO PLAYER ACCOUNT
+ NO PAYMENT
+
+ Architecture:
+
+   Browser A
+       |
+       | WebRTC
+       |
+   Browser B
+       |
+       | WebRTC
+       |
+   Browser C
+       |
+       | WebRTC
+       |
+   Browser D
+
+ PeerJS Cloud is used only for signaling.
+
+ The HOST is authoritative for:
+   - moves
+   - drops
+   - captured-piece transfer
+   - clocks
+   - lobby
+   - game result
+   - chat
+
+ The clients cannot simply declare their own legal move.
+
+===============================================================
+*/
+
+
+/* ------------------------------------------------------------
+   CONSTANTS
+------------------------------------------------------------ */
+
+const PIECES = [
+  "p",
+  "n",
+  "b",
+  "r",
+  "q"
+];
+
+const SYMBOL = {
+  p:"♟",
+  n:"♞",
+  b:"♝",
+  r:"♜",
+  q:"♛",
+  k:"♚"
+};
+
+
+/*
+  Fixed seats:
+
+  Seat 0 = Board 1 White
+  Seat 1 = Board 1 Black
+  Seat 2 = Board 2 White
+  Seat 3 = Board 2 Black
+
+  Default teams:
+    Team A = seats 0 + 3
+    Team B = seats 1 + 2
+
+  Therefore each team has one white and one black
+  player on different boards.
+*/
+
+const SEATS = [
+  {
+    id:0,
+    board:0,
+    color:"w",
+    label:"Board 1 White"
+  },
+  {
+    id:1,
+    board:0,
+    color:"b",
+    label:"Board 1 Black"
+  },
+  {
+    id:2,
+    board:1,
+    color:"w",
+    label:"Board 2 White"
+  },
+  {
+    id:3,
+    board:1,
+    color:"b",
+    label:"Board 2 Black"
+  }
+];
+
+const DEFAULT_TEAMS = [
+  "A",
+  "B",
+  "B",
+  "A"
+];
+
+
+/* ------------------------------------------------------------
+   GLOBALS
+------------------------------------------------------------ */
+
+let peer = null;
+
+let hostConnection = null;
+
+let connections = new Map();
+
+let isHost = false;
+
+let myPeerId = "";
+
+let mySeat = null;
+
+let myName = "";
+
+let roomId = "";
+
+let state = null;
+
+let selectedSquare = null;
+
+let selectedDrop = null;
+
+let selectedBoard = null;
+
+let hostTimer = null;
+
+let currentProcessingBoard = 0;
+
+
+/* ------------------------------------------------------------
+   DOM
+------------------------------------------------------------ */
+
+const home =
+  document.getElementById("home");
+
+const lobby =
+  document.getElementById("lobby");
+
+const game =
+  document.getElementById("game");
+
+const statusEl =
+  document.getElementById("status");
+
+
+/* ------------------------------------------------------------
+   HELPERS
+------------------------------------------------------------ */
+
+function esc(value){
+
+  return String(value)
+    .replaceAll("&","&amp;")
+    .replaceAll("<","&lt;")
+    .replaceAll(">","&gt;")
+    .replaceAll('"',"&quot;")
+    .replaceAll("'","&#39;");
+
+}
+
+
+function seatInfo(seat){
+
+  return SEATS[seat];
+
+}
+
+
+function me(){
+
+  if(!state) return null;
+
+  return state.players.find(
+    p=>p && p.peerId===myPeerId
+  ) || null;
+
+}
+
+
+function playerAtSeat(seat){
+
+  if(!state) return null;
+
+  return state.players[seat] || null;
+
+}
+
+
+function teammate(player){
+
+  if(!player) return null;
+
+  return state.players.find(p=>
+    p &&
+    p.team===player.team &&
+    p.seat!==player.seat
+  ) || null;
+
+}
+
+
+function teamName(team){
+
+  return team==="A"
+    ? "Blue"
+    : "Red";
+
+}
+
+
+function boardName(board){
+
+  return board===0
+    ? "Board 1"
+    : "Board 2";
+
+}
+
+
+function colorName(color){
+
+  return color==="w"
+    ? "White"
+    : "Black";
+
+}
+
+
+function setStatus(text,color){
+
+  statusEl.textContent=text;
+
+  statusEl.style.color=color || "";
+
+}
+
+
+function toast(text){
+
+  const el =
+    document.getElementById("toast");
+
+  el.textContent=text;
+
+  el.style.display="block";
+
+  clearTimeout(toast.timer);
+
+  toast.timer=setTimeout(()=>{
+    el.style.display="none";
+  },2300);
+
+}
+
+
+function formatTime(milliseconds){
+
+  const ms =
+    Math.max(0,milliseconds);
+
+  const seconds =
+    Math.ceil(ms/1000);
+
+  const minutes =
+    Math.floor(seconds/60);
+
+  const remainder =
+    seconds%60;
+
+  return (
+    minutes+
+    ":"+
+    String(remainder).padStart(2,"0")
+  );
+
+}
+
+
+function emptyHand(){
+
+  return {
+    p:0,
+    n:0,
+    b:0,
+    r:0,
+    q:0
+  };
+
+}
+
+
+/* ------------------------------------------------------------
+   STATE
+------------------------------------------------------------ */
+
+function createState(seconds){
+
+  const initial =
+    new Chess();
+
+  return {
+
+    phase:"lobby",
+
+    timeControl:seconds,
+
+    players:[
+      null,
+      null,
+      null,
+      null
+    ],
+
+    boards:[
+      {
+        fen:initial.fen(),
+        clock:seconds*1000,
+        lastTick:0,
+        active:false
+      },
+      {
+        fen:initial.fen(),
+        clock:seconds*1000,
+        lastTick:0,
+        active:false
+      }
+    ],
+
+    /*
+      hands[seat] belongs to that player.
+
+      Example:
+      Seat 0 captures a black knight.
+
+      Seat 0's teammate is seat 3.
+
+      Therefore:
+        hands[3].n++
+    */
+
+    hands:[
+      emptyHand(),
+      emptyHand(),
+      emptyHand(),
+      emptyHand()
+    ],
+
+    chat:[],
+
+    reason:null,
+
+    version:0
+
+  };
+
+}
+
+
+/* ------------------------------------------------------------
+   HOME
+------------------------------------------------------------ */
+
+document
+  .getElementById("homeButton")
+  .addEventListener("click",()=>{
+
+    const username =
+      document
+        .getElementById("username")
+        .value
+        .trim();
+
+    if(username.length<2){
+
+      document
+        .getElementById("homeError")
+        .textContent=
+          "Username must contain at least 2 characters.";
+
+      return;
+    }
+
+    myName =
+      username.slice(0,20);
+
+    const params =
+      new URLSearchParams(
+        location.search
+      );
+
+    const requestedRoom =
+      params.get("room");
+
+    if(requestedRoom){
+
+      joinRoom(requestedRoom);
+
+    }else{
+
+      createRoom();
+
+    }
+
+  });
+
+
+/* ------------------------------------------------------------
+   CREATE ROOM
+------------------------------------------------------------ */
+
+function createRoom(){
+
+  isHost=true;
+
+  setStatus(
+    "Connecting...",
+    "#ffd34d"
+  );
+
+
+  peer =
+    new Peer({
+      debug:0
+    });
+
+
+  peer.on("open",id=>{
+
+    myPeerId=id;
+
+    roomId=id;
+
+
+    const seconds =
+      Number(
+        document
+          .getElementById("timeControl")
+          .value
+      );
+
+
+    state =
+      createState(seconds);
+
+
+    state.players[0]={
+      seat:0,
+      name:myName,
+      peerId:myPeerId,
+      team:"A",
+      connected:true
+    };
+
+
+    mySeat=0;
+
+
+    /*
+      Put room ID in URL.
+
+      This becomes:
+
+      https://username.github.io/bughouse/?room=XXXX
+    */
+
+    history.replaceState(
+      null,
+      "",
+      "?room="+
+      encodeURIComponent(roomId)
+    );
+
+
+    peer.on(
+      "connection",
+      handleIncomingConnection
+    );
+
+
+    peer.on("disconnected",()=>{
+
+      setStatus(
+        "Disconnected",
+        "#ff6478"
+      );
+
+    });
+
+
+    peer.on("close",()=>{
+
+      setStatus(
+        "Connection closed",
+        "#ff6478"
+      );
+
+    });
+
+
+    peer.on("error",err=>{
+
+      console.error(err);
+
+    });
+
+
+    showLobby();
+
+    broadcastState();
+
+    setStatus(
+      "Room ready",
+      "#46df93"
+    );
+
+  });
+
+
+  peer.on("error",err=>{
+
+    console.error(err);
+
+    document
+      .getElementById("homeError")
+      .textContent=
+        "Could not create the room: "+
+        (err.message || err.type || "unknown error");
+
+    setStatus(
+      "Connection error",
+      "#ff6478"
+    );
+
+  });
+
+}
+
+
+/* ------------------------------------------------------------
+   JOIN ROOM
+------------------------------------------------------------ */
+
+function joinRoom(hostId){
+
+  isHost=false;
+
+  roomId=hostId;
+
+  setStatus(
+    "Connecting...",
+    "#ffd34d"
+  );
+
+
+  peer =
+    new Peer({
+      debug:0
+    });
+
+
+  peer.on("open",id=>{
+
+    myPeerId=id;
+
+
+    hostConnection =
+      peer.connect(
+        hostId,
+        {
+          reliable:true,
+          serialization:"json",
+          metadata:{
+            username:myName
+          }
+        }
+      );
+
+
+    setupConnection(hostConnection);
+
+  });
+
+
+  peer.on("error",err=>{
+
+    console.error(err);
+
+    document
+      .getElementById("homeError")
+      .textContent=
+        "Could not join the room. Check the link and try again.";
+
+    setStatus(
+      "Connection error",
+      "#ff6478"
+    );
+
+  });
+
+}
+
+
+/* ------------------------------------------------------------
+   INCOMING CONNECTION
+------------------------------------------------------------ */
+
+function handleIncomingConnection(conn){
+
+  setupConnection(conn);
+
+}
+
+
+/* ------------------------------------------------------------
+   CONNECTION SETUP
+------------------------------------------------------------ */
+
+function setupConnection(conn){
+
+  conn.on("open",()=>{
+
+    connections.set(
+      conn.peer,
+      conn
+    );
+
+
+    if(isHost){
+
+      /*
+        Find an empty seat.
+      */
+
+      const freeSeat =
+        [0,1,2,3].find(
+          seat=>!state.players[seat]
+        );
+
+
+      if(freeSeat===undefined){
+
+        conn.send({
+          type:"error",
+          message:"This room is full."
+        });
+
+        conn.close();
+
+        return;
+      }
+
+
+      const username =
+        String(
+          conn.metadata &&
+          conn.metadata.username
+            ? conn.metadata.username
+            : "Player"
+        )
+        .trim()
+        .slice(0,20) ||
+        "Player";
+
+
+      state.players[freeSeat]={
+        seat:freeSeat,
+        name:username,
+        peerId:conn.peer,
+        team:DEFAULT_TEAMS[freeSeat],
+        connected:true
+      };
+
+
+      /*
+        Tell the player their seat.
+      */
+
+      conn.send({
+        type:"seat",
+        seat:freeSeat
+      });
+
+
+      broadcastState();
+
+      renderEverything();
+
+    }else{
+
+      setStatus(
+        "Connected",
+        "#46df93"
+      );
+
+    }
+
+  });
+
+
+  conn.on("data",msg=>{
+
+    if(isHost){
+
+      handleHostMessage(
+        conn,
+        msg
+      );
+
+    }else{
+
+      handleClientMessage(msg);
+
+    }
+
+  });
+
+
+  conn.on("close",()=>{
+
+    connections.delete(conn.peer);
+
+
+    if(!isHost) return;
+
+
+    const player =
+      state.players.find(
+        p=>p && p.peerId===conn.peer
+      );
+
+
+    if(!player) return;
+
+
+    player.connected=false;
+
+
+    /*
+      In the lobby, an empty seat becomes available.
+
+      During a game, keep the player's seat so a reconnect
+      does not destroy team/inventory information.
+    */
+
+    if(state.phase==="lobby"){
+
+      state.players[player.seat]=null;
+
+    }
+
+
+    broadcastState();
+
+    renderEverything();
+
+  });
+
+}
+
+
+/* ------------------------------------------------------------
+   HOST MESSAGE ROUTER
+------------------------------------------------------------ */
+
+function handleHostMessage(
+  conn,
+  msg
+){
+
+  if(
+    !msg ||
+    typeof msg!=="object"
+  ){
+
+    return;
+
+  }
+
+
+  const player =
+    state.players.find(
+      p=>p && p.peerId===conn.peer
+    );
+
+
+  if(!player) return;
+
+
+  if(msg.type==="chat"){
+
+    const text =
+      String(msg.text || "")
+        .trim()
+        .slice(0,250);
+
+
+    if(!text) return;
+
+
+    addChat(
+      player.name,
+      text
+    );
+
+
+    return;
+  }
+
+
+  if(
+    msg.kind==="move" ||
+    msg.kind==="drop"
+  ){
+
+    if(state.phase!=="playing"){
+
+      reject(
+        player,
+        "The game is not running."
+      );
+
+      return;
+    }
+
+
+    processMove(
+      player,
+      msg
+    );
+
+  }
+
+}
+
+
+/* ------------------------------------------------------------
+   CLIENT MESSAGE ROUTER
+------------------------------------------------------------ */
+
+function handleClientMessage(msg){
+
+  if(
+    !msg ||
+    typeof msg!=="object"
+  ){
+
+    return;
+  }
+
+
+  if(msg.type==="seat"){
+
+    mySeat=
+      Number(msg.seat);
+
+    return;
+  }
+
+
+  if(msg.type==="state"){
+
+    state=msg.state;
+
+
+    const player =
+      state.players.find(
+        p=>p && p.peerId===myPeerId
+      );
+
+
+    if(player){
+
+      mySeat=player.seat;
+
+    }
+
+
+    renderEverything();
+
+    return;
+  }
+
+
+  if(msg.type==="error"){
+
+    toast(
+      msg.message ||
+      "Illegal action."
+    );
+
+  }
+
+}
+
+
+/* ------------------------------------------------------------
+   BROADCAST
+------------------------------------------------------------ */
+
+function broadcast(packet){
+
+  for(
+    const conn of connections.values()
+  ){
+
+    if(!conn.open) continue;
+
+
+    try{
+
+      conn.send(packet);
+
+    }catch(error){
+
+      console.error(error);
+
+    }
+
+  }
+
+}
+
+
+function broadcastState(){
+
+  if(!state) return;
+
+
+  state.version++;
+
+
+  broadcast({
+    type:"state",
+    state:state
+  });
+
+
+  renderEverything();
+
+}
+
+
+/* ------------------------------------------------------------
+   LOBBY
+------------------------------------------------------------ */
+
+function showLobby(){
+
+  home.classList.add("hidden");
+
+  game.classList.add("hidden");
+
+  lobby.classList.remove("hidden");
+
+
+  document
+    .getElementById("roomText")
+    .textContent=
+      "Room ID: "+roomId;
+
+
+  /*
+    The room URL is shareable once hosted on HTTPS.
+  */
+
+  document
+    .getElementById("shareUrl")
+    .value=
+      location.href.split("?")[0]+
+      "?room="+
+      encodeURIComponent(roomId);
+
+
+  document
+    .getElementById("lobbyTime")
+    .value=
+      String(state.timeControl);
+
+
+  document
+    .getElementById("lobbyTime")
+    .disabled=
+      !isHost;
+
+
+  renderLobby();
+
+}
+
+
+function renderLobby(){
+
+  if(!state) return;
+
+
+  const container =
+    document.getElementById(
+      "lobbyPlayers"
+    );
+
+
+  container.innerHTML =
+    SEATS.map(seat=>{
+
+      const p =
+        state.players[seat.id];
+
+
+      if(!p){
+
+        return `
+          <div class="playerRow">
+
+            <div class="playerSeat">
+
+              <div class="seat">
+                ${seat.id+1}
+              </div>
+
+              <div>
+
+                <b>
+                  ${esc(seat.label)}
+                </b>
+
+                <div class="small">
+                  Waiting...
+                </div>
+
+              </div>
+
+            </div>
+
+            <div class="small">
+              Empty
+            </div>
+
+          </div>
+        `;
+
+      }
+
+
+      return `
+        <div class="playerRow">
+
+          <div class="playerSeat">
+
+            <div class="seat">
+              ${seat.id+1}
+            </div>
+
+            <div>
+
+              <b>
+                ${esc(p.name)}
+              </b>
+
+              <div class="${
+                p.team==="A"
+                  ? "teamA"
+                  : "teamB"
+              }">
+
+                Team ${teamName(p.team)}
+                · ${seat.label}
+
+                ${
+                  p.seat===mySeat
+                    ? " · You"
+                    : ""
+                }
+
+              </div>
+
+            </div>
+
+          </div>
+
+
+          ${
+            isHost
+
+            ? `
+
+              <select
+                class="teamChooser"
+                data-seat="${seat.id}"
+              >
+
+                <option
+                  value="A"
+                  ${
+                    p.team==="A"
+                      ? "selected"
+                      : ""
+                  }
+                >
+                  Team Blue
+                </option>
+
+                <option
+                  value="B"
+                  ${
+                    p.team==="B"
+                      ? "selected"
+                      : ""
+                  }
+                >
+                  Team Red
+                </option>
+
+              </select>
+
+            `
+
+            : `
+
+              <span class="${
+                p.team==="A"
+                  ? "teamA"
+                  : "teamB"
+              }">
+
+                Team ${teamName(p.team)}
+
+              </span>
+
+            `
+          }
+
+        </div>
+      `;
+
+    }).join("");
+
+
+  document
+    .querySelectorAll(".teamChooser")
+    .forEach(select=>{
+
+      select.addEventListener(
+        "change",
+        ()=>{
+
+          if(!isHost) return;
+
+
+          const seat =
+            Number(
+              select.dataset.seat
+            );
+
+
+          const player =
+            state.players[seat];
+
+
+          if(!player) return;
+
+
+          player.team=
+            select.value;
+
+
+          renderLobby();
+
+          broadcastState();
+
+        }
+      );
+
+    });
+
+
+  validateLobby();
+
+}
+
+
+function validateLobby(){
+
+  if(!isHost) return true;
+
+
+  const players =
+    state.players.filter(Boolean);
+
+
+  let error="";
+
+
+  if(players.length!==4){
+
+    error=
+      "Four players are required.";
+
+  }else{
+
+    const teamA =
+      players.filter(
+        p=>p.team==="A"
+      );
+
+    const teamB =
+      players.filter(
+        p=>p.team==="B"
+      );
+
+
+    if(
+      teamA.length!==2 ||
+      teamB.length!==2
+    ){
+
+      error=
+        "Each team must contain exactly two players.";
+
+    }else{
+
+      /*
+        Each team must occupy both boards.
+      */
+
+      const boardsA =
+        new Set(
+          teamA.map(
+            p=>seatInfo(p.seat).board
+          )
+        );
+
+
+      const boardsB =
+        new Set(
+          teamB.map(
+            p=>seatInfo(p.seat).board
+          )
+        );
+
+
+      if(
+        boardsA.size!==2 ||
+        boardsB.size!==2
+      ){
+
+        error=
+          "Each team must have one player on each board.";
+
+      }
+
+    }
+
+  }
+
+
+  document
+    .getElementById("lobbyError")
+    .textContent=error;
+
+
+  document
+    .getElementById("startButton")
+    .disabled=!!error;
+
+
+  return !error;
+
+}
+
+
+/* ------------------------------------------------------------
+   TIME CONTROL
+------------------------------------------------------------ */
+
+document
+  .getElementById("lobbyTime")
+  .addEventListener(
+    "change",
+    ()=>{
+
+      if(!isHost) return;
+
+
+      if(state.phase!=="lobby") return;
+
+
+      const seconds =
+        Number(
+          document
+            .getElementById("lobbyTime")
+            .value
+        );
+
+
+      state.timeControl=seconds;
+
+
+      for(
+        const board of state.boards
+      ){
+
+        board.clock=
+          seconds*1000;
+
+      }
+
+
+      broadcastState();
+
+    }
+  );
+
+
+/* ------------------------------------------------------------
+   START
+------------------------------------------------------------ */
+
+document
+  .getElementById("startButton")
+  .addEventListener(
+    "click",
+    ()=>{
+
+      if(!isHost) return;
+
+
+      if(!validateLobby()) return;
+
+
+      const now=
+        Date.now();
+
+
+      state.phase="playing";
+
+      state.reason=null;
+
+
+      for(
+        const board of state.boards
+      ){
+
+        board.clock=
+          state.timeControl*1000;
+
+        board.lastTick=now;
+
+        board.active=true;
+
+      }
+
+
+      startHostClock();
+
+      broadcastState();
+
+    }
+  );
+
+
+/* ------------------------------------------------------------
+   CLOCK
+------------------------------------------------------------ */
+
+function startHostClock(){
+
+  clearInterval(hostTimer);
+
+
+  hostTimer=
+    setInterval(
+      ()=>{
+
+        if(!isHost) return;
+
+        if(state.phase!=="playing") return;
+
+
+        const now=
+          Date.now();
+
+
+        for(
+          const board of state.boards
+        ){
+
+          if(!board.active) continue;
+
+
+          if(!board.lastTick){
+
+            board.lastTick=now;
+
+          }
+
+
+          const elapsed=
+            now-board.lastTick;
+
+
+          board.clock-=elapsed;
+
+          board.lastTick=now;
+
+
+          if(board.clock<=0){
+
+            board.clock=0;
+
+            finishGame(
+              "Time expired on "+
+              boardName(
+                state.boards.indexOf(board)
+              )+
+              "."
+            );
+
+            return;
+
+          }
+
+        }
+
+
+        /*
+          Send authoritative clock snapshots.
+        */
+
+        broadcastState();
+
+      },
+      200
+    );
+
+}
+
+
+/* ------------------------------------------------------------
+   PROCESS MOVE
+------------------------------------------------------------ */
+
+function processMove(
+  player,
+  action
+){
+
+  const seat=
+    seatInfo(player.seat);
+
+
+  if(!seat){
+
+    reject(
+      player,
+      "Invalid seat."
+    );
+
+    return;
+  }
+
+
+  const boardIndex=
+    seat.board;
+
+
+  const board=
+    state.boards[boardIndex];
+
+
+  currentProcessingBoard=
+    boardIndex;
+
+
+  /*
+    First consume the time that elapsed since the previous
+    authoritative state.
+
+    This is done on the server/host, not the player's browser.
+  */
+
+  const now=
+    Date.now();
+
+
+  if(board.lastTick){
+
+    board.clock-=
+      now-board.lastTick;
+
+  }
+
+
+  board.lastTick=now;
+
+
+  if(board.clock<=0){
+
+    board.clock=0;
+
+    finishGame(
+      "Time expired on "+
+      boardName(boardIndex)+"."
+    );
+
+    return;
+
+  }
+
+
+  const chess=
+    new Chess(board.fen);
+
+
+  /*
+    Correct side to move?
+  */
+
+  if(chess.turn()!==seat.color){
+
+    reject(
+      player,
+      "It is not your turn."
+    );
+
+    /*
+      We changed lastTick while rejecting.
+      Reset it so the clock does not accidentally consume
+      time from a rejected action.
+    */
+
+    board.lastTick=
+      Date.now();
+
+    return;
+
+  }
+
+
+  if(action.kind==="move"){
+
+    processNormalMove(
+      player,
+      seat,
+      boardIndex,
+      chess,
+      action
+    );
+
+    return;
+
+  }
+
+
+  if(action.kind==="drop"){
+
+    processDrop(
+      player,
+      seat,
+      boardIndex,
+      chess,
+      action
+    );
+
+    return;
+
+  }
+
+}
+
+
+/* ------------------------------------------------------------
+   NORMAL MOVE
+------------------------------------------------------------ */
+
+function processNormalMove(
+  player,
+  seat,
+  boardIndex,
+  chess,
+  action
+){
+
+  const from=
+    String(action.from || "")
+      .toLowerCase();
+
+
+  const to=
+    String(action.to || "")
+      .toLowerCase();
+
+
+  if(
+    !/^[a-h][1-8]$/.test(from) ||
+    !/^[a-h][1-8]$/.test(to)
+  ){
+
+    reject(
+      player,
+      "Invalid square."
+    );
+
+    state.boards[boardIndex].lastTick=
+      Date.now();
+
+    return;
+
+  }
+
+
+  const piece=
+    chess.get(from);
+
+
+  if(!piece){
+
+    reject(
+      player,
+      "There is no piece there."
+    );
+
+    state.boards[boardIndex].lastTick=
+      Date.now();
+
+    return;
+
+  }
+
+
+  if(piece.color!==seat.color){
+
+    reject(
+      player,
+      "That is not your piece."
+    );
+
+    state.boards[boardIndex].lastTick=
+      Date.now();
+
+    return;
+
+  }
+
+
+  const legalMoves=
+    chess.moves({
+      square:from,
+      verbose:true
+    });
+
+
+  const move=
+    legalMoves.find(
+      m=>m.to===to
+    );
+
+
+  if(!move){
+
+    reject(
+      player,
+      "Illegal chess move."
+    );
+
+    state.boards[boardIndex].lastTick=
+      Date.now();
+
+    return;
+
+  }
+
+
+  /*
+    Work out captured piece BEFORE making the move.
+  */
+
+  let capturedType=null;
+
+
+  const target=
+    chess.get(to);
+
+
+  if(target){
+
+    /*
+      A king can never legally be captured by chess.js,
+      so this is always a normal captured piece.
+    */
+
+    capturedType=
+      target.type;
+
+  }
+
+
+  /*
+    En passant captures a pawn on the square behind
+    the destination.
+  */
+
+  if(
+    move.isEnPassant &&
+    move.isEnPassant()
+  ){
+
+    capturedType="p";
+
+  }
+
+
+  /*
+    Promotion.
+  */
+
+  let promotion;
+
+
+  if(
+    piece.type==="p" &&
+    (
+      to.endsWith("1") ||
+      to.endsWith("8")
+    )
+  ){
+
+    promotion=
+      String(
+        action.promotion || ""
+      ).toLowerCase();
+
+
+    if(
+      !["q","r","b","n"]
+        .includes(promotion)
+    ){
+
+      reject(
+        player,
+        "Promotion must be Q, R, B or N."
+      );
+
+      state.boards[boardIndex].lastTick=
+        Date.now();
+
+      return;
+
+    }
+
+  }
+
+
+  const result=
+    chess.move({
+      from:from,
+      to:to,
+      ...(promotion
+        ? {promotion:promotion}
+        : {})
+    });
+
+
+  if(!result){
+
+    reject(
+      player,
+      "Illegal move."
+    );
+
+    state.boards[boardIndex].lastTick=
+      Date.now();
+
+    return;
+
+  }
+
+
+  /*
+    Captured material goes to the teammate.
+
+    This is the central bughouse rule.
+  */
+
+  if(capturedType){
+
+    const partner=
+      teammate(player);
+
+
+    if(partner){
+
+      state.hands[
+        partner.seat
+      ][capturedType]++;
+
+    }
+
+  }
+
+
+  /*
+    Save position.
+  */
+
+  state.boards[boardIndex].fen=
+    chess.fen();
+
+
+  state.boards[boardIndex].lastTick=
+    Date.now();
+
+
+  /*
+    Bughouse ends when either board is checkmated.
+
+    Stalemate also ends the game here.
+  */
+
+  if(chess.isCheckmate()){
+
+    finishGame(
+      player.name+
+      " checkmated the opponent on "+
+      boardName(boardIndex)+"."
+    );
+
+    return;
+
+  }
+
+
+  if(chess.isStalemate()){
+
+    finishGame(
+      boardName(boardIndex)+
+      " ended in stalemate."
+    );
+
+    return;
+
+  }
+
+
+  broadcastState();
+
+}
+
+
+/* ------------------------------------------------------------
+   DROP
+------------------------------------------------------------ */
+
+function processDrop(
+  player,
+  seat,
+  boardIndex,
+  chess,
+  action
+){
+
+  const type=
+    String(action.piece || "")
+      .toLowerCase();
+
+
+  const to=
+    String(action.to || "")
+      .toLowerCase();
+
+
+  if(!PIECES.includes(type)){
+
+    reject(
+      player,
+      "Invalid drop piece."
+    );
+
+    state.boards[boardIndex].lastTick=
+      Date.now();
+
+    return;
+
+  }
+
+
+  if(!/^[a-h][1-8]$/.test(to)){
+
+    reject(
+      player,
+      "Invalid destination."
+    );
+
+    state.boards[boardIndex].lastTick=
+      Date.now();
+
+    return;
+
+  }
+
+
+  /*
+    The player must actually possess this captured piece.
+  */
+
+  if(
+    state.hands[player.seat][type] <= 0
+  ){
+
+    reject(
+      player,
+      "You do not have that piece."
+    );
+
+    state.boards[boardIndex].lastTick=
+      Date.now();
+
+    return;
+
+  }
+
+
+  /*
+    Drops can only be made on empty squares.
+  */
+
+  if(chess.get(to)){
+
+    reject(
+      player,
+      "The destination is occupied."
+    );
+
+    state.boards[boardIndex].lastTick=
+      Date.now();
+
+    return;
+
+  }
+
+
+  /*
+    Pawn may never be dropped on rank 1 or 8.
+  */
+
+  if(
+    type==="p" &&
+    (
+      to.endsWith("1") ||
+      to.endsWith("8")
+    )
+  ){
+
+    reject(
+      player,
+      "A pawn cannot be dropped on the first or last rank."
+    );
+
+    state.boards[boardIndex].lastTick=
+      Date.now();
+
+    return;
+
+  }
+
+
+  /*
+    Put the piece onto a temporary board.
+  */
+
+  const test=
+    new Chess(chess.fen());
+
+
+  const placed=
+    test.put(
+      {
+        type:type,
+        color:seat.color
+      },
+      to
+    );
+
+
+  if(!placed){
+
+    reject(
+      player,
+      "Illegal drop."
+    );
+
+    state.boards[boardIndex].lastTick=
+      Date.now();
+
+    return;
+
+  }
+
+
+  /*
+    The drop itself must not leave your own king in check.
+
+    This is the important "no illegal drops" test.
+
+    A drop is allowed to give the opponent check.
+    It simply may not leave the dropping player's own king
+    in check.
+  */
+
+  const kingSquare=
+    findKing(
+      test,
+      seat.color
+    );
+
+
+  if(
+    !kingSquare ||
+    test.isAttacked(
+      kingSquare,
+      seat.color==="w"
+        ? "b"
+        : "w"
+    )
+  ){
+
+    reject(
+      player,
+      "That drop would leave your king in check."
+    );
+
+    state.boards[boardIndex].lastTick=
+      Date.now();
+
+    return;
+
+  }
+
+
+  /*
+    Consume captured piece.
+  */
+
+  state.hands[player.seat][type]--;
+
+
+  /*
+    chess.js 1.4.0 provides setTurn().
+    Use it instead of manually editing FEN.
+  */
+
+  test.setTurn(
+    seat.color==="w"
+      ? "b"
+      : "w"
+  );
+
+
+  /*
+    A drop is a move, so reset halfmove clock and
+    preserve a valid FEN.
+
+    setTurn changes the active color.
+  */
+
+  state.boards[boardIndex].fen=
+    test.fen();
+
+
+  state.boards[boardIndex].lastTick=
+    Date.now();
+
+
+  /*
+    Checkmate after a drop is a valid game-ending event.
+  */
+
+  if(test.isCheckmate()){
+
+    finishGame(
+      player.name+
+      " delivered checkmate on "+
+      boardName(boardIndex)+"."
+    );
+
+    return;
+
+  }
+
+
+  broadcastState();
+
+}
+
+
+/* ------------------------------------------------------------
+   FIND KING
+------------------------------------------------------------ */
+
+function findKing(
+  chess,
+  color
+){
+
+  for(let rank=1;rank<=8;rank++){
+
+    for(
+      let file=0;
+      file<8;
+      file++
+    ){
+
+      const square=
+        String.fromCharCode(
+          97+file
+        )+
+        rank;
+
+
+      const piece=
+        chess.get(square);
+
+
+      if(
+        piece &&
+        piece.type==="k" &&
+        piece.color===color
+      ){
+
+        return square;
+
+      }
+
+    }
+
+  }
+
+
+  return null;
+
+}
+
+
+/* ------------------------------------------------------------
+   REJECT
+------------------------------------------------------------ */
+
+function reject(
+  player,
+  message
+){
+
+  const conn=
+    connections.get(
+      player.peerId
+    );
+
+
+  if(
+    conn &&
+    conn.open
+  ){
+
+    conn.send({
+      type:"error",
+      message:message
+    });
+
+  }
+
+
+  if(
+    player.peerId===myPeerId
+  ){
+
+    toast(message);
+
+  }
+
+}
+
+
+/* ------------------------------------------------------------
+   FINISH GAME
+------------------------------------------------------------ */
+
+function finishGame(reason){
+
+  if(
+    state.phase==="finished"
+  ){
+
+    return;
+
+  }
+
+
+  state.phase="finished";
+
+  state.reason=reason;
+
+
+  for(
+    const board of state.boards
+  ){
+
+    board.active=false;
+
+    board.lastTick=0;
+
+  }
+
+
+  clearInterval(hostTimer);
+
+  hostTimer=null;
+
+
+  broadcastState();
+
+  renderEverything();
+
+}
+
+
+/* ------------------------------------------------------------
+   CHAT
+------------------------------------------------------------ */
+
+function addChat(
+  name,
+  text
+){
+
+  state.chat.push({
+    name:name,
+    text:text,
+    time:Date.now()
+  });
+
+
+  /*
+    Avoid unlimited room memory.
+  */
+
+  if(state.chat.length>200){
+
+    state.chat=
+      state.chat.slice(-200);
+
+  }
+
+
+  broadcastState();
+
+}
+
+
+document
+  .getElementById("chatForm")
+  .addEventListener(
+    "submit",
+    event=>{
+
+      event.preventDefault();
+
+
+      const input=
+        document.getElementById(
+          "chatInput"
+        );
+
+
+      const text=
+        input.value
+          .trim()
+          .slice(0,250);
+
+
+      if(!text) return;
+
+
+      if(isHost){
+
+        const player=me();
+
+        if(player){
+
+          addChat(
+            player.name,
+            text
+          );
+
+        }
+
+      }else{
+
+        if(
+          hostConnection &&
+          hostConnection.open
+        ){
+
+          hostConnection.send({
+            type:"chat",
+            text:text
+          });
+
+        }else{
+
+          toast(
+            "Connection to host lost."
+          );
+
+        }
+
+      }
+
+
+      input.value="";
+
+    }
+  );
+
+
+/* ------------------------------------------------------------
+   COPY ROOM LINK
+------------------------------------------------------------ */
+
+document
+  .getElementById("copyButton")
+  .addEventListener(
+    "click",
+    async()=>{
+
+      const input=
+        document.getElementById(
+          "shareUrl"
+        );
+
+
+      try{
+
+        await navigator.clipboard
+          .writeText(input.value);
+
+        toast(
+          "Room link copied."
+        );
+
+      }catch(error){
+
+        input.select();
+
+        document.execCommand(
+          "copy"
+        );
+
+        toast(
+          "Room link copied."
+        );
+
+      }
+
+    }
+  );
+
+
+/* ------------------------------------------------------------
+   SEND GAME ACTION
+------------------------------------------------------------ */
+
+function sendAction(action){
+
+  if(!state) return;
+
+
+  if(isHost){
+
+    const player=me();
+
+    if(player){
+
+      processMove(
+        player,
+        action
+      );
+
+    }
+
+    return;
+
+  }
+
+
+  if(
+    !hostConnection ||
+    !hostConnection.open
+  ){
+
+    toast(
+      "Connection to host lost."
+    );
+
+    return;
+
+  }
+
+
+  hostConnection.send(
+    action
+  );
+
+}
+
+
+/* ------------------------------------------------------------
+   RENDER EVERYTHING
+------------------------------------------------------------ */
+
+function renderEverything(){
+
+  if(!state) return;
+
+
+  if(state.phase==="lobby"){
+
+    home.classList.add("hidden");
+
+    game.classList.add("hidden");
+
+    lobby.classList.remove("hidden");
+
+    renderLobby();
+
+    return;
+
+  }
+
+
+  if(
+    state.phase==="playing" ||
+    state.phase==="finished"
+  ){
+
+    home.classList.add("hidden");
+
+    lobby.classList.add("hidden");
+
+    game.classList.remove("hidden");
+
+    renderGame();
+
+  }
+
+}
+
+
+/* ------------------------------------------------------------
+   GAME RENDER
+------------------------------------------------------------ */
+
+function renderGame(){
+
+  renderPlayers();
+
+  renderBoard(0);
+
+  renderBoard(1);
+
+  renderHand(0);
+
+  renderHand(1);
+
+  renderChat();
+
+  renderClocks();
+
+
+  document
+    .getElementById("matchInfo")
+    .innerHTML=
+      "<b>"+
+      (state.timeControl/60)+
+      "+0</b><br>"+
+      (
+        state.phase==="playing"
+          ? "Match in progress"
+          : "Match finished"
+      );
+
+
+  if(
+    state.phase==="finished"
+  ){
+
+    document
+      .getElementById("gameOverReason")
+      .textContent=
+        state.reason ||
+        "Game over.";
+
+
+    document
+      .getElementById("gameOver")
+      .style.display="grid";
+
+  }
+
+}
+
+
+/* ------------------------------------------------------------
+   PLAYER LIST
+------------------------------------------------------------ */
+
+function renderPlayers(){
+
+  document
+    .getElementById("gamePlayers")
+    .innerHTML=
+      state.players
+        .filter(Boolean)
+        .map(player=>{
+
+          const seat=
+            seatInfo(
+              player.seat
+            );
+
+
+          return `
+            <div
+              class="gamePlayer ${
+                player.seat===mySeat
+                  ? "me"
+                  : ""
+              }"
+            >
+
+              <span>
+
+                <b>
+                  ${esc(player.name)}
+                </b>
+
+                ${
+                  player.seat===mySeat
+                    ? " (you)"
+                    : ""
+                }
+
+              </span>
+
+
+              <span
+                class="${
+                  player.team==="A"
+                    ? "teamA"
+                    : "teamB"
+                }"
+              >
+
+                ${player.team}
+                · ${colorName(seat.color)}
+                · ${boardName(seat.board)}
+
+              </span>
+
+            </div>
+          `;
+
+        })
+        .join("");
+
+}
+
+
+/* ------------------------------------------------------------
+   BOARD ORIENTATION
+------------------------------------------------------------ */
+
+function boardOrientation(
+  boardIndex
+){
+
+  const player=me();
+
+
+  if(player){
+
+    const seat=
+      seatInfo(player.seat);
+
+
+    /*
+      Your own board is oriented from your side.
+
+      If you're Black, you see Black at the bottom.
+    */
+
+    if(
+      seat.board===boardIndex
+    ){
+
+      return seat.color;
+
+    }
+
+  }
+
+
+  return "w";
+
+}
+
+
+/* ------------------------------------------------------------
+   LEGAL TARGETS
+------------------------------------------------------------ */
+
+function getLegalTargets(
+  boardIndex,
+  chess
+){
+
+  const player=me();
+
+  if(!player) return [];
+
+
+  const seat=
+    seatInfo(player.seat);
+
+
+  if(
+    seat.board!==boardIndex
+  ){
+
+    return [];
+
+  }
+
+
+  if(
+    chess.turn()!==seat.color
+  ){
+
+    return [];
+
+  }
+
+
+  /*
+    Drop selection.
+  */
+
+  if(selectedDrop){
+
+    const targets=[];
+
+
+    for(
+      let rank=1;
+      rank<=8;
+      rank++
+    ){
+
+      for(
+        let file=0;
+        file<8;
+        file++
+      ){
+
+        const square=
+          String.fromCharCode(
+            97+file
+          )+
+          rank;
+
+
+        if(chess.get(square)){
+
+          continue;
+
+        }
+
+
+        /*
+          Pawn cannot go on first/last rank.
+        */
+
+        if(
+          selectedDrop==="p" &&
+          (
+            rank===1 ||
+            rank===8
+          )
+        ){
+
+          continue;
+
+        }
+
+
+        const test=
+          new Chess(
+            chess.fen()
+          );
+
+
+        if(
+          !test.put(
+            {
+              type:selectedDrop,
+              color:seat.color
+            },
+            square
+          )
+        ){
+
+          continue;
+
+        }
+
+
+        const king=
+          findKing(
+            test,
+            seat.color
+          );
+
+
+        /*
+          The drop must not leave our own king in check.
+        */
+
+        if(
+          king &&
+          !test.isAttacked(
+            king,
+            seat.color==="w"
+              ? "b"
+              : "w"
+          )
+        ){
+
+          targets.push(square);
+
+        }
+
+      }
+
+    }
+
+
+    return targets;
+
+  }
+
+
+  if(!selectedSquare){
+
+    return [];
+
+  }
+
+
+  const piece=
+    chess.get(
+      selectedSquare
+    );
+
+
+  if(
+    !piece ||
+    piece.color!==seat.color
+  ){
+
+    return [];
+
+  }
+
+
+  return chess
+    .moves({
+      square:selectedSquare,
+      verbose:true
+    })
+    .map(
+      move=>move.to
+    );
+
+}
+
+
+/* ------------------------------------------------------------
+   RENDER BOARD
+------------------------------------------------------------ */
+
+function renderBoard(
+  boardIndex
+){
+
+  const container=
+    document.getElementById(
+      "board"+boardIndex
+    );
+
+
+  const chess=
+    new Chess(
+      state.boards[
+        boardIndex
+      ].fen
+    );
+
+
+  const orientation=
+    boardOrientation(
+      boardIndex
+    );
+
+
+  const squares=[];
+
+
+  if(orientation==="w"){
+
+    for(
+      let rank=8;
+      rank>=1;
+      rank--
+    ){
+
+      for(
+        let file=0;
+        file<8;
+        file++
+      ){
+
+        squares.push(
+          String.fromCharCode(
+            97+file
+          )+
+          rank
+        );
+
+      }
+
+    }
+
+  }else{
+
+    for(
+      let rank=1;
+      rank<=8;
+      rank++
+    ){
+
+      for(
+        let file=7;
+        file>=0;
+        file--
+      ){
+
+        squares.push(
+          String.fromCharCode(
+            97+file
+          )+
+          rank
+        );
+
+      }
+
+    }
+
+  }
+
+
+  const legalTargets=
+    getLegalTargets(
+      boardIndex,
+      chess
+    );
+
+
+  const checkedKing=
+    chess.isCheck()
+      ? findKing(
+          chess,
+          chess.turn()
+        )
+      : null;
+
+
+  container.innerHTML=
+    squares.map(
+      square=>{
+
+        const file=
+          square.charCodeAt(0)-97;
+
+        const rank=
+          Number(square[1]);
+
+
+        const isLight=
+          (file+rank)%2===0;
+
+
+        const piece=
+          chess.get(square);
+
+
+        const selected=
+          selectedBoard===boardIndex &&
+          selectedSquare===square;
+
+
+        const legal=
+          legalTargets.includes(
+            square
+          );
+
+
+        const capture=
+          legal &&
+          !!piece;
+
+
+        return `
+          <div
+            class="
+              square
+              ${isLight
+                ? "light"
+                : "dark"}
+              ${selected
+                ? "selected"
+                : ""}
+              ${legal
+                ? "legal"
+                : ""}
+              ${capture
+                ? "capture"
+                : ""}
+              ${
+                checkedKing===square
+                  ? "check"
+                  : ""
+              }
+            "
+            data-board="${boardIndex}"
+            data-square="${square}"
+          >
+
+            ${
+              piece
+
+                ? `
+
+                  <span
+                    class="
+                      piece
+                      ${
+                        piece.color==="w"
+                          ? "whitePiece"
+                          : "blackPiece"
+                      }
+                    "
+                  >
+                    ${SYMBOL[piece.type]}
+                  </span>
+
+                `
+
+                : ""
+            }
+
+
+            ${
+              file===
+              (
+                orientation==="w"
+                  ? 0
+                  : 7
+              )
+
+                ? `
+                  <span
+                    class="coord rank"
+                  >
+                    ${rank}
+                  </span>
+                `
+
+                : ""
+            }
+
+
+            ${
+              rank===
+              (
+                orientation==="w"
+                  ? 1
+                  : 8
+              )
+
+                ? `
+                  <span
+                    class="coord file"
+                  >
+                    ${String.fromCharCode(
+                      97+file
+                    )}
+                  </span>
+                `
+
+                : ""
+            }
+
+          </div>
+        `;
+
+      }
+    ).join("");
+
+
+  container
+    .querySelectorAll(".square")
+    .forEach(square=>{
+
+      square.addEventListener(
+        "click",
+        squareClicked
+      );
+
+    });
+
+
+  renderTurn(
+    boardIndex,
+    chess
+  );
+
+}
+
+
+/* ------------------------------------------------------------
+   SQUARE CLICK
+------------------------------------------------------------ */
+
+function squareClicked(event){
+
+  if(
+    !state ||
+    state.phase!=="playing"
+  ){
+
+    return;
+
+  }
+
+
+  const boardIndex=
+    Number(
+      event.currentTarget
+        .dataset.board
+    );
+
+
+  const square=
+    event.currentTarget
+      .dataset.square;
+
+
+  const player=me();
+
+  if(!player) return;
+
+
+  const seat=
+    seatInfo(player.seat);
+
+
+  if(
+    seat.board!==boardIndex
+  ){
+
+    return;
+
+  }
+
+
+  const chess=
+    new Chess(
+      state.boards[
+        boardIndex
+      ].fen
+    );
+
+
+  if(
+    chess.turn()!==seat.color
+  ){
+
+    toast(
+      "It is not your turn."
+    );
+
+    return;
+
+  }
+
+
+  /*
+    DROP
+  */
+
+  if(selectedDrop){
+
+    const targets=
+      getLegalTargets(
+        boardIndex,
+        chess
+      );
+
+
+    if(
+      !targets.includes(square)
+    ){
+
+      toast(
+        "Illegal drop."
+      );
+
+      return;
+
+    }
+
+
+    sendAction({
+      kind:"drop",
+      piece:selectedDrop,
+      to:square
+    });
+
+
+    clearSelection();
+
+    return;
+
+  }
+
+
+  const piece=
+    chess.get(square);
+
+
+  /*
+    Nothing selected:
+    select own piece.
+  */
+
+  if(!selectedSquare){
+
+    if(
+      piece &&
+      piece.color===seat.color
+    ){
+
+      selectedSquare=square;
+
+      selectedBoard=boardIndex;
+
+      renderBoard(
+        boardIndex
+      );
+
+    }
+
+    return;
+
+  }
+
+
+  /*
+    Click another own piece:
+    change selection.
+  */
+
+  if(
+    piece &&
+    piece.color===seat.color
+  ){
+
+    selectedSquare=square;
+
+    selectedBoard=boardIndex;
+
+    renderBoard(
+      boardIndex
+    );
+
+    return;
+
+  }
+
+
+  const legalMoves=
+    chess.moves({
+      square:selectedSquare,
+      verbose:true
+    });
+
+
+  const move=
+    legalMoves.find(
+      m=>m.to===square
+    );
+
+
+  if(!move){
+
+    clearSelection();
+
+    toast(
+      "Illegal move."
+    );
+
+    return;
+
+  }
+
+
+  let promotion=null;
+
+
+  if(
+    move.piece==="p" &&
+    (
+      square.endsWith("1") ||
+      square.endsWith("8")
+    )
+  ){
+
+    const answer=
+      prompt(
+        "Promote to Q, R, B or N:",
+        "Q"
+      );
+
+
+    if(answer===null){
+
+      clearSelection();
+
+      return;
+
+    }
+
+
+    promotion=
+      answer
+        .trim()
+        .toLowerCase();
+
+
+    if(
+      !["q","r","b","n"]
+        .includes(promotion)
+    ){
+
+      toast(
+        "Invalid promotion."
+      );
+
+      clearSelection();
+
+      return;
+
+    }
+
+  }
+
+
+  sendAction({
+
+    kind:"move",
+
+    from:selectedSquare,
+
+    to:square,
+
+    promotion:promotion
+
+  });
+
+
+  clearSelection();
+
+}
+
+
+/* ------------------------------------------------------------
+   CLEAR SELECTION
+------------------------------------------------------------ */
+
+function clearSelection(){
+
+  selectedSquare=null;
+
+  selectedDrop=null;
+
+  selectedBoard=null;
+
+
+  if(
+    state &&
+    state.phase==="playing"
+  ){
+
+    renderBoard(0);
+
+    renderBoard(1);
+
+    renderHand(0);
+
+    renderHand(1);
+
+  }
+
+}
+
+
+/* ------------------------------------------------------------
+   HAND
+------------------------------------------------------------ */
+
+function renderHand(
+  boardIndex
+){
+
+  const container=
+    document.getElementById(
+      "hand"+boardIndex
+    );
+
+
+  container.innerHTML=
+    `
+      <span class="handTitle">
+        Drops
+      </span>
+    `;
+
+
+  const player=me();
+
+  if(!player) return;
+
+
+  const seat=
+    seatInfo(player.seat);
+
+
+  /*
+    Only show the pieces that belong to the
+    player controlling this board.
+  */
+
+  if(
+    seat.board!==boardIndex
+  ){
+
+    return;
+
+  }
+
+
+  for(
+    const type of PIECES
+  ){
+
+    const count=
+      state.hands[
+        player.seat
+      ][type];
+
+
+    if(count<=0) continue;
+
+
+    const button=
+      document.createElement(
+        "button"
+      );
+
+
+    button.className=
+      "handPiece";
+
+
+    if(
+      selectedDrop===type &&
+      selectedBoard===boardIndex
+    ){
+
+      button.classList.add(
+        "selected"
+      );
+
+    }
+
+
+    button.innerHTML=
+      `
+        <span
+          class="
+            mini
+            ${
+              seat.color==="w"
+                ? "whitePiece"
+                : "blackPiece"
+            }
+          "
+        >
+          ${SYMBOL[type]}
+        </span>
+
+        <span class="count">
+          ${count}
+        </span>
+      `;
+
+
+    button.addEventListener(
+      "click",
+      ()=>{
+
+        if(
+          selectedDrop===type &&
+          selectedBoard===boardIndex
+        ){
+
+          clearSelection();
+
+          return;
+
+        }
+
+
+        selectedDrop=type;
+
+        selectedSquare=null;
+
+        selectedBoard=boardIndex;
+
+
+        renderBoard(
+          boardIndex
+        );
+
+
+        renderHand(
+          boardIndex
+        );
+
+      }
+    );
+
+
+    container.appendChild(
+      button
+    );
+
+  }
+
+}
+
+
+/* ------------------------------------------------------------
+   TURN DISPLAY
+------------------------------------------------------------ */
+
+function renderTurn(
+  boardIndex,
+  chess
+){
+
+  const element=
+    document.getElementById(
+      "turn"+boardIndex
+    );
+
+
+  if(
+    state.phase==="finished"
+  ){
+
+    element.textContent=
+      "Finished";
+
+    return;
+
+  }
+
+
+  const player=
+    state.players.find(
+      p=>{
+
+        if(!p) return false;
+
+
+        const seat=
+          seatInfo(p.seat);
+
+
+        return (
+          seat.board===boardIndex &&
+          seat.color===chess.turn()
+        );
+
+      }
+    );
+
+
+  element.textContent=
+    player
+      ? (
+          player.name+
+          " · "+
+          colorName(
+            chess.turn()
+          )+
+          " to move"
+        )
+      : (
+          colorName(
+            chess.turn()
+          )+
+          " to move"
+        );
+
+}
+
+
+/* ------------------------------------------------------------
+   CLOCK DISPLAY
+------------------------------------------------------------ */
+
+function getDisplayedClock(
+  boardIndex
+){
+
+  const board=
+    state.boards[
+      boardIndex
+    ];
+
+
+  let time=
+    board.clock;
+
+
+  /*
+    Client-side display only.
+
+    The host remains authoritative.
+  */
+
+  if(
+    state.phase==="playing" &&
+    board.active &&
+    board.lastTick
+  ){
+
+    time-=
+      Date.now()-
+      board.lastTick;
+
+  }
+
+
+  return Math.max(
+    0,
+    time
+  );
+
+}
+
+
+function renderClocks(){
+
+  for(
+    let i=0;
+    i<2;
+    i++
+  ){
+
+    const element=
+      document.getElementById(
+        "clock"+i
+      );
+
+
+    const time=
+      getDisplayedClock(i);
+
+
+    element.textContent=
+      formatTime(time);
+
+
+    const chess=
+      new Chess(
+        state.boards[i].fen
+      );
+
+
+    const player=me();
+
+
+    let active=false;
+
+
+    if(player){
+
+      const seat=
+        seatInfo(player.seat);
+
+
+      active=
+        seat.board===i &&
+        seat.color===chess.turn();
+
+    }
+
+
+    element.classList.toggle(
+      "active",
+      active &&
+      state.phase==="playing"
+    );
+
+
+    element.classList.toggle(
+      "low",
+      time<=10000
+    );
+
+  }
+
+}
+
+
+/* ------------------------------------------------------------
+   CHAT DISPLAY
+------------------------------------------------------------ */
+
+function renderChat(){
+
+  const box=
+    document.getElementById(
+      "chatMessages"
+    );
+
+
+  const stickToBottom=
+    box.scrollHeight-
+    box.scrollTop-
+    box.clientHeight<
+    50;
+
+
+  box.innerHTML=
+    state.chat
+      .map(message=>{
+
+        const time=
+          new Date(
+            message.time
+          )
+          .toLocaleTimeString(
+            [],
+            {
+              hour:"2-digit",
+              minute:"2-digit"
+            }
+          );
+
+
+        return `
+          <div class="message">
+
+            <span class="messageName">
+              ${esc(message.name)}
+            </span>
+
+            <span class="messageTime">
+              ${time}
+            </span>
+
+            <br>
+
+            ${esc(message.text)}
+
+          </div>
+        `;
+
+      })
+      .join("");
+
+
+  if(stickToBottom){
+
+    box.scrollTop=
+      box.scrollHeight;
+
+  }
+
+}
+
+
+/* ------------------------------------------------------------
+   GAME OVER CLOSE
+------------------------------------------------------------ */
+
+document
+  .getElementById("gameOverClose")
+  .addEventListener(
+    "click",
+    ()=>{
+
+      document
+        .getElementById(
+          "gameOver"
+        )
+        .style.display="none";
+
+    }
+  );
+
+
+/* ------------------------------------------------------------
+   SMOOTH LOCAL CLOCK
+------------------------------------------------------------ */
+
+setInterval(
+  ()=>{
+
+    if(
+      state &&
+      (
+        state.phase==="playing" ||
+        state.phase==="finished"
+      )
+    ){
+
+      renderClocks();
+
+    }
+
+  },
+  100
+);
+
+
+/* ------------------------------------------------------------
+   PAGE VISIBILITY
+------------------------------------------------------------ */
+
+document.addEventListener(
+  "visibilitychange",
+  ()=>{
+
+    if(
+      !document.hidden &&
+      state
+    ){
+
+      renderEverything();
+
+    }
+
+  }
+);
+
+
+/* ------------------------------------------------------------
+   INITIAL URL
+------------------------------------------------------------ */
+
+const initialRoom=
+  new URLSearchParams(
+    location.search
+  ).get("room");
+
+
+if(initialRoom){
+
+  document
+    .getElementById(
+      "homeButton"
+    )
+    .textContent=
+      "Join room";
+
+}
+
+
+/* ------------------------------------------------------------
+   INITIAL STATUS
+------------------------------------------------------------ */
+
+setStatus(
+  "Ready",
+  "#94a1b1"
+);
+
+</script>
+
+</body>
+</html>
