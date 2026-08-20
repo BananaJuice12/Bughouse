@@ -2,14 +2,16 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>Bughouse Arena</title>
 
+<!-- PeerJS -->
 <script src="https://cdn.jsdelivr.net/npm/peerjs@1.5.5/dist/peerjs.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/chess.js@1.4.0/dist/chess.min.js"></script>
 
 <style>
-*{box-sizing:border-box}
+*{
+  box-sizing:border-box;
+}
 
 :root{
   --bg:#0d1117;
@@ -26,15 +28,30 @@
   --dark:#b58863;
 }
 
+html,
 body{
   margin:0;
-  min-height:100vh;
-  background:radial-gradient(circle at top,#182230,#0d1117 60%);
+  min-height:100%;
+  background:
+    radial-gradient(
+      circle at top,
+      #182230 0%,
+      #0d1117 60%
+    );
   color:var(--text);
-  font-family:Arial,Helvetica,sans-serif;
+  font-family:
+    Arial,
+    Helvetica,
+    sans-serif;
 }
 
-button,input,select{
+body{
+  min-height:100vh;
+}
+
+button,
+input,
+select{
   font:inherit;
 }
 
@@ -46,10 +63,17 @@ button{
   color:#fff;
   background:var(--blue);
   font-weight:bold;
+  transition:
+    filter .15s,
+    transform .05s;
 }
 
 button:hover{
   filter:brightness(1.12);
+}
+
+button:active{
+  transform:translateY(1px);
 }
 
 button:disabled{
@@ -57,7 +81,8 @@ button:disabled{
   cursor:not-allowed;
 }
 
-input,select{
+input,
+select{
   background:#0d1117;
   color:white;
   border:1px solid var(--border);
@@ -66,17 +91,24 @@ input,select{
   outline:none;
 }
 
+input:focus,
+select:focus{
+  border-color:#58a6ff;
+  box-shadow:0 0 0 2px rgba(88,166,255,.15);
+}
+
 .hidden{
   display:none!important;
 }
 
 header{
   padding:18px 25px;
-  background:rgba(13,17,23,.95);
+  background:rgba(13,17,23,.97);
   border-bottom:1px solid var(--border);
   position:sticky;
   top:0;
   z-index:50;
+  backdrop-filter:blur(10px);
 }
 
 header h1{
@@ -176,6 +208,7 @@ header span{
 
 .share input{
   flex:1;
+  min-width:0;
 }
 
 .seats{
@@ -203,6 +236,7 @@ header span{
   color:#58a6ff;
   font-weight:bold;
   margin-top:4px;
+  overflow-wrap:anywhere;
 }
 
 .game-layout{
@@ -246,6 +280,7 @@ header span{
   margin:auto;
   box-shadow:0 10px 30px rgba(0,0,0,.4);
   user-select:none;
+  touch-action:manipulation;
 }
 
 .square{
@@ -267,7 +302,9 @@ header span{
 }
 
 .square.selected{
-  box-shadow:inset 0 0 0 5px rgba(255,215,0,.85);
+  box-shadow:
+    inset 0 0 0 5px
+    rgba(255,215,0,.9);
 }
 
 .square.target:after{
@@ -288,11 +325,25 @@ header span{
   position:absolute;
 }
 
+.square.drop-target:after{
+  content:"";
+  width:22%;
+  height:22%;
+  background:rgba(46,204,113,.75);
+  border-radius:50%;
+  position:absolute;
+}
+
 .piece{
   z-index:2;
   position:relative;
-  font-family:"DejaVu Sans","Noto Sans Symbols 2",serif;
+  font-family:
+    "DejaVu Sans",
+    "Noto Sans Symbols 2",
+    "Segoe UI Symbol",
+    serif;
   text-shadow:0 2px 2px rgba(0,0,0,.35);
+  pointer-events:none;
 }
 
 .whitepiece{
@@ -369,6 +420,16 @@ header span{
   color:#ff7b72;
 }
 
+.clock small{
+  color:var(--muted);
+  font-size:11px;
+  font-weight:normal;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+  display:block;
+}
+
 .sidebar{
   display:flex;
   flex-direction:column;
@@ -397,6 +458,11 @@ header span{
   border-radius:7px;
   display:flex;
   justify-content:space-between;
+  gap:8px;
+}
+
+.player span{
+  overflow-wrap:anywhere;
 }
 
 .chat{
@@ -434,6 +500,7 @@ header span{
 
 .chat-input input{
   flex:1;
+  min-width:0;
 }
 
 .promotion{
@@ -465,6 +532,19 @@ header span{
   font-size:35px;
 }
 
+.connection-dot{
+  display:inline-block;
+  width:9px;
+  height:9px;
+  border-radius:50%;
+  background:#3fb950;
+  margin-right:5px;
+}
+
+.disconnected{
+  background:#f85149;
+}
+
 @media(max-width:1100px){
   .game-layout{
     grid-template-columns:1fr;
@@ -476,8 +556,24 @@ header span{
 }
 
 @media(max-width:700px){
+  header{
+    padding:14px;
+  }
+
+  header h1{
+    font-size:20px;
+  }
+
   .screen{
     padding:10px;
+  }
+
+  .home{
+    margin:25px auto;
+  }
+
+  .home h2{
+    font-size:34px;
   }
 
   .lobby-grid{
@@ -486,6 +582,18 @@ header span{
 
   .seats{
     grid-template-columns:1fr;
+  }
+
+  .game-layout{
+    gap:10px;
+  }
+
+  .board-card{
+    padding:8px;
+  }
+
+  .square{
+    font-size:clamp(24px,10vw,48px);
   }
 }
 </style>
@@ -497,18 +605,26 @@ header span{
   <h1>♟ <span>Bughouse Arena</span></h1>
 </header>
 
-<!-- HOME -->
+<!-- =====================================================
+     HOME
+===================================================== -->
+
 <section id="home" class="screen">
   <div class="card home">
 
     <h2>Bughouse</h2>
 
     <p>
-      Two boards. Four players. Captured pieces become ammunition
-      for your teammate.
+      Two boards. Four players. Captured pieces become
+      ammunition for your teammate.
     </p>
 
-    <input id="username" maxlength="20" placeholder="Choose your username">
+    <input
+      id="username"
+      maxlength="20"
+      autocomplete="nickname"
+      placeholder="Choose your username"
+    >
 
     <select id="timeControl">
       <option value="120">2 + 0</option>
@@ -531,8 +647,12 @@ header span{
   </div>
 </section>
 
-<!-- LOBBY -->
+<!-- =====================================================
+     LOBBY
+===================================================== -->
+
 <section id="lobby" class="screen hidden">
+
   <div class="card lobby">
 
     <h2>Room Lobby</h2>
@@ -565,6 +685,7 @@ header span{
 
         <label>
           Time control
+
           <select id="lobbyTime">
             <option value="120">2 + 0</option>
             <option value="180">3 + 0</option>
@@ -581,10 +702,15 @@ header span{
       </div>
 
     </div>
+
   </div>
+
 </section>
 
-<!-- GAME -->
+<!-- =====================================================
+     GAME
+===================================================== -->
+
 <section id="game" class="screen hidden">
 
   <div class="game-layout">
@@ -592,6 +718,7 @@ header span{
     <div class="boards">
 
       <!-- BOARD 1 -->
+
       <div class="board-card">
 
         <div class="board-title">
@@ -610,6 +737,7 @@ header span{
       </div>
 
       <!-- BOARD 2 -->
+
       <div class="board-card">
 
         <div class="board-title">
@@ -632,8 +760,11 @@ header span{
     <aside class="sidebar">
 
       <div class="side-card">
+
         <h3>Players</h3>
+
         <div id="players" class="players"></div>
+
       </div>
 
       <div class="side-card chat">
@@ -643,24 +774,39 @@ header span{
         <div id="chatMessages" class="chat-messages"></div>
 
         <div class="chat-input">
-          <input id="chatInput" maxlength="250" placeholder="Type a message...">
-          <button id="send">Send</button>
+
+          <input
+            id="chatInput"
+            maxlength="250"
+            placeholder="Type a message..."
+          >
+
+          <button id="send">
+            Send
+          </button>
+
         </div>
 
       </div>
 
       <div class="side-card">
+
         <div id="gameStatus" class="status">
           Waiting...
         </div>
+
       </div>
 
     </aside>
 
   </div>
+
 </section>
 
-<!-- PROMOTION -->
+<!-- =====================================================
+     PROMOTION
+===================================================== -->
+
 <div id="promotion" class="promotion hidden">
 
   <div class="promotion-box">
@@ -668,23 +814,49 @@ header span{
     <h2>Promote pawn</h2>
 
     <div class="promotion-buttons">
+
       <button data-piece="q">♛</button>
       <button data-piece="r">♜</button>
       <button data-piece="b">♝</button>
       <button data-piece="n">♞</button>
+
     </div>
 
   </div>
+
 </div>
 
-<script>
+<!-- =====================================================
+     APPLICATION
+===================================================== -->
+
+<script type="module">
+
+/*
+  =========================================================
+  BUGHOUSE ARENA
+  =========================================================
+
+  Important:
+  chess.js 1.4.0 is loaded as an ES module.
+
+  This is intentional. The old code tried to load:
+      chess.min.js
+
+  from a path that does not provide the browser global
+  "Chess".
+
+  =========================================================
+*/
+
+import { Chess } from
+  "https://cdn.jsdelivr.net/npm/chess.js@1.4.0/dist/esm/chess.js";
 
 /* =========================================================
-   BUGHOUSE ARENA
-   ONE FILE
-   ========================================================= */
+   CONSTANTS
+========================================================= */
 
-const PIECES={
+const PIECES = {
   p:"♟",
   n:"♞",
   b:"♝",
@@ -693,56 +865,120 @@ const PIECES={
   k:"♚"
 };
 
-const FILES=["a","b","c","d","e","f","g","h"];
+const FILES = [
+  "a","b","c","d",
+  "e","f","g","h"
+];
 
-const START_FEN=
-  "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
+const START_FEN =
+  "rnbqkbnr/pppppppp/8/8/8/8/" +
+  "PPPPPPPP/RNBQKBNR w KQkq - 0 1";
 
-let peer=null;
-let hostConnection=null;
-let isHost=false;
-let mySeat=-1;
-let myName="";
-let hostId="";
+/*
+  Seats never change their board/color:
 
-let connections={};
+  0 = Board 1 White
+  1 = Board 1 Black
+  2 = Board 2 White
+  3 = Board 2 Black
+*/
 
-let state=null;
+const ROLES = [
+  "Board 1 — White",
+  "Board 1 — Black",
+  "Board 2 — White",
+  "Board 2 — Black"
+];
 
-let games=[
+/* =========================================================
+   GLOBALS
+========================================================= */
+
+let peer = null;
+
+let hostConnection = null;
+
+let isHost = false;
+
+let mySeat = -1;
+
+let myName = "";
+
+let hostId = "";
+
+let connections = {};
+
+let state = null;
+
+let games = [
   null,
   null
 ];
 
-let selectedSquare=null;
-let selectedPocket=null;
-let promotion=null;
+let selectedSquare = null;
 
-let clockInterval=null;
+let selectedPocket = null;
 
-/* =========================================================
-   URL
-   ========================================================= */
+let promotion = null;
 
-const params=new URLSearchParams(location.search);
-const roomFromURL=params.get("room");
+let renderTimer = null;
+
+let lastHostBroadcast = 0;
 
 /* =========================================================
    DOM
-   ========================================================= */
+========================================================= */
 
-const $=id=>document.getElementById(id);
+const $ = id =>
+  document.getElementById(id);
+
+/* =========================================================
+   BASIC UTILITIES
+========================================================= */
+
+function escapeHTML(value){
+
+  return String(value ?? "")
+    .replaceAll("&","&amp;")
+    .replaceAll("<","&lt;")
+    .replaceAll(">","&gt;")
+    .replaceAll('"',"&quot;")
+    .replaceAll("'","&#039;");
+
+}
+
+function showOnly(id){
+
+  $("home").classList.add("hidden");
+  $("lobby").classList.add("hidden");
+  $("game").classList.add("hidden");
+
+  $(id).classList.remove("hidden");
+
+}
+
+function homeStatus(text, cls=""){
+
+  $("homeStatus").textContent = text;
+
+  $("homeStatus").className =
+    "status " + cls;
+
+}
 
 /* =========================================================
    STATE
-   ========================================================= */
+========================================================= */
 
 function createState(seconds){
 
   return {
 
     started:false,
+
     ended:false,
+
+    endReason:"",
 
     time:seconds,
 
@@ -752,15 +988,6 @@ function createState(seconds){
       null,
       null
     ],
-
-    /*
-      Fixed seats:
-
-      0 = Board 1 White
-      1 = Board 1 Black
-      2 = Board 2 White
-      3 = Board 2 Black
-    */
 
     teams:[
       1,
@@ -779,13 +1006,11 @@ function createState(seconds){
     ],
 
     /*
-      CRITICAL BUGHOUSE RULE:
+      pockets[seat] contains pieces available
+      for THAT PLAYER to drop.
 
-      pockets[seat] contains pieces that THAT PLAYER
-      is allowed to drop.
-
-      Captured pieces are therefore NEVER stored
-      on the capturer.
+      A captured piece therefore goes to the
+      capturer's teammate.
     */
 
     pockets:[
@@ -795,270 +1020,142 @@ function createState(seconds){
       {p:0,n:0,b:0,r:0,q:0}
     ],
 
+    /*
+      [board][0] = White
+      [board][1] = Black
+    */
+
     clocks:[
-      [seconds*1000,seconds*1000],
-      [seconds*1000,seconds*1000]
+      [
+        seconds * 1000,
+        seconds * 1000
+      ],
+      [
+        seconds * 1000,
+        seconds * 1000
+      ]
     ],
 
     clockAt:Date.now(),
 
     chat:[]
+
   };
+
 }
 
 /* =========================================================
-   STATUS
-   ========================================================= */
-
-function homeStatus(text,cls=""){
-  $("homeStatus").textContent=text;
-  $("homeStatus").className="status "+cls;
-}
-
-/* =========================================================
-   PEER
-   ========================================================= */
+   PEERJS
+========================================================= */
 
 function makePeer(){
 
   return new Promise((resolve,reject)=>{
 
-    peer=new Peer({
+    if(peer){
+
+      try{
+        peer.destroy();
+      }catch(e){}
+
+      peer = null;
+    }
+
+    peer = new Peer({
 
       host:"0.peerjs.com",
+
       port:443,
+
       path:"/",
+
       secure:true,
 
-      debug:1,
+      debug:0,
 
       config:{
         iceServers:[
           {
-            urls:"stun:stun.l.google.com:19302"
+            urls:[
+              "stun:stun.l.google.com:19302",
+              "stun:stun1.l.google.com:19302"
+            ]
           }
         ]
       }
 
     });
 
-    peer.on("open",id=>{
+    let settled = false;
+
+    peer.on("open", id => {
+
+      if(settled)return;
+
+      settled = true;
+
+      console.log("Peer opened:",id);
+
       resolve(id);
+
     });
 
-    peer.on("error",error=>{
+    peer.on("error", error => {
 
-      console.error(error);
+      console.error("PeerJS error:",error);
 
-      if(error.type==="unavailable-id"){
+      if(!settled){
+
+        settled = true;
+
         reject(error);
-        return;
-      }
 
-      homeStatus(
-        "Connection error: "+
-        (error.type||error.message||"unknown"),
-        "error"
-      );
+      }else{
+
+        homeStatus(
+          "Connection error: " +
+          (
+            error.type ||
+            error.message ||
+            "unknown"
+          ),
+          "error"
+        );
+
+      }
 
     });
 
     peer.on("disconnected",()=>{
-      console.warn("Peer disconnected.");
+
+      console.warn("PeerJS disconnected");
+
     });
 
     peer.on("close",()=>{
-      console.warn("Peer closed.");
+
+      console.warn("PeerJS closed");
+
     });
 
   });
+
 }
 
 /* =========================================================
    CREATE ROOM
-   ========================================================= */
+========================================================= */
 
-$("create").onclick=async()=>{
+$("create").onclick =
+  createRoom;
 
-  myName=$("username").value.trim();
+async function createRoom(){
 
-  if(!myName){
-    homeStatus("Enter a username first.","error");
-    return;
-  }
-
-  const time=Number($("timeControl").value);
-
-  $("create").disabled=true;
-
-  homeStatus("Connecting to multiplayer service...");
-
-  try{
-
-    isHost=true;
-
-    state=createState(time);
-
-    const id=await makePeer();
-
-    hostId=id;
-    mySeat=0;
-
-    state.players[0]={
-      name:myName,
-      connected:true
-    };
-
-    history.replaceState(
-      {},
-      "",
-      "?room="+encodeURIComponent(id)
-    );
-
-    $("roomLink").value=
-      location.origin+
-      location.pathname+
-      "?room="+encodeURIComponent(id);
-
-    peer.on("connection",hostAccept);
-
-    showLobby();
-
-    renderLobby();
-
-    addSystemMessage("Room created.");
-
-  }catch(error){
-
-    console.error(error);
-
-    $("create").disabled=false;
-
-    homeStatus(
-      "Could not connect to multiplayer service.",
-      "error"
-    );
-
-  }
-};
-
-/* =========================================================
-   HOST ACCEPTS PLAYER
-   ========================================================= */
-
-function hostAccept(conn){
-
-  if(!isHost)return;
-
-  conn.on("open",()=>{
-
-    let seat=-1;
-
-    for(let i=1;i<4;i++){
-
-      if(!state.players[i]){
-        seat=i;
-        break;
-      }
-
-    }
-
-    if(seat===-1){
-
-      conn.send({
-        type:"error",
-        message:"This room is full."
-      });
-
-      conn.close();
-      return;
-    }
-
-    conn.seat=seat;
-
-    connections[seat]=conn;
-
-    conn.send({
-      type:"welcome",
-      seat,
-      state
-    });
-
-    conn.on("data",data=>{
-      hostMessage(conn,data);
-    });
-
-    conn.on("close",()=>{
-
-      if(state.players[seat]){
-
-        state.players[seat].connected=false;
-
-        broadcastState();
-
-        renderLobby();
-      }
-
-    });
-
-  });
-}
-
-/* =========================================================
-   HOST RECEIVES
-   ========================================================= */
-
-function hostMessage(conn,data){
-
-  if(!data)return;
-
-  const seat=conn.seat;
-
-  if(data.type==="hello"){
-
-    let name=String(data.name||"Player")
+  myName =
+    $("username")
+      .value
       .trim()
       .slice(0,20);
-
-    if(!name)name="Player";
-
-    state.players[seat]={
-      name,
-      connected:true
-    };
-
-    broadcastState();
-    renderLobby();
-
-    return;
-  }
-
-  if(data.type==="action"){
-
-    performAction(data.action,seat);
-
-    return;
-  }
-
-  if(data.type==="chat"){
-
-    receiveChat(
-      String(data.name||"Player"),
-      String(data.message||"")
-    );
-
-    return;
-  }
-
-}
-
-/* =========================================================
-   JOIN ROOM
-   ========================================================= */
-
-$("join").onclick=async()=>{
-
-  myName=$("username").value.trim();
 
   if(!myName){
 
@@ -1068,119 +1165,480 @@ $("join").onclick=async()=>{
     );
 
     return;
+
   }
 
-  $("join").disabled=true;
+  const seconds =
+    Number($("timeControl").value);
 
-  homeStatus("Connecting to room...");
+  $("create").disabled = true;
+
+  homeStatus(
+    "Connecting to multiplayer service..."
+  );
 
   try{
 
-    isHost=false;
+    isHost = true;
 
-    await makePeer();
+    state = createState(seconds);
 
-    hostId=roomFromURL;
+    const id =
+      await makePeer();
 
-    hostConnection=peer.connect(
-      hostId,
-      {
-        reliable:true,
-        serialization:"json"
-      }
+    hostId = id;
+
+    mySeat = 0;
+
+    state.players[0] = {
+      name:myName,
+      connected:true
+    };
+
+    history.replaceState(
+      {},
+      "",
+      "?room=" +
+      encodeURIComponent(id)
     );
 
-    hostConnection.on("open",()=>{
+    $("roomLink").value =
+      location.origin +
+      location.pathname +
+      "?room=" +
+      encodeURIComponent(id);
 
-      hostConnection.send({
-        type:"hello",
-        name:myName
-      });
+    peer.on(
+      "connection",
+      hostAccept
+    );
 
-      homeStatus(
-        "Connected to room.",
-        "success"
-      );
+    showOnly("lobby");
 
-    });
+    renderLobby();
 
-    hostConnection.on("data",clientMessage);
+    addSystemMessage(
+      "Room created. Share the room link."
+    );
 
-    hostConnection.on("close",()=>{
-
-      alert(
-        "The host disconnected. The game has ended."
-      );
-
-    });
-
-    hostConnection.on("error",error=>{
-
-      console.error(error);
-
-      homeStatus(
-        "Could not connect to room.",
-        "error"
-      );
-
-    });
+    homeStatus(
+      "Room created.",
+      "success"
+    );
 
   }catch(error){
 
     console.error(error);
 
-    $("join").disabled=false;
+    isHost = false;
+
+    $("create").disabled = false;
 
     homeStatus(
-      "Could not connect.",
+      "Could not connect to the multiplayer service.",
       "error"
     );
 
   }
 
-};
+}
 
 /* =========================================================
-   CLIENT RECEIVES
-   ========================================================= */
+   HOST ACCEPTS CONNECTION
+========================================================= */
+
+function hostAccept(conn){
+
+  if(!isHost)return;
+
+  console.log(
+    "Incoming connection:",
+    conn.peer
+  );
+
+  conn.on("open",()=>{
+
+    /*
+      Find an empty seat.
+
+      Seat 0 is always occupied by host.
+    */
+
+    let seat = -1;
+
+    for(let i=1;i<4;i++){
+
+      if(!state.players[i]){
+
+        seat = i;
+
+        break;
+
+      }
+
+    }
+
+    if(seat === -1){
+
+      try{
+
+        conn.send({
+          type:"error",
+          message:"This room is full."
+        });
+
+        conn.close();
+
+      }catch(e){}
+
+      return;
+
+    }
+
+    conn.seat = seat;
+
+    connections[seat] = conn;
+
+    conn.send({
+      type:"welcome",
+      seat,
+      state
+    });
+
+    conn.on("data",data=>{
+
+      hostMessage(
+        conn,
+        data
+      );
+
+    });
+
+    conn.on("close",()=>{
+
+      console.log(
+        "Player disconnected:",
+        seat
+      );
+
+      if(
+        state &&
+        state.players[seat]
+      ){
+
+        state.players[seat].connected =
+          false;
+
+      }
+
+      broadcastState();
+
+      renderLobby();
+
+    });
+
+    conn.on("error",error=>{
+
+      console.error(
+        "Player connection error:",
+        error
+      );
+
+    });
+
+  });
+
+}
+
+/* =========================================================
+   HOST MESSAGE
+========================================================= */
+
+function hostMessage(conn,data){
+
+  if(!data)return;
+
+  const seat = conn.seat;
+
+  if(
+    typeof seat !== "number" ||
+    seat < 1 ||
+    seat > 3
+  ){
+
+    return;
+
+  }
+
+  if(data.type === "hello"){
+
+    const name =
+      String(data.name || "Player")
+        .trim()
+        .slice(0,20) ||
+      "Player";
+
+    state.players[seat] = {
+
+      name,
+
+      connected:true
+
+    };
+
+    broadcastState();
+
+    renderLobby();
+
+    return;
+
+  }
+
+  if(data.type === "action"){
+
+    performAction(
+      data.action,
+      seat
+    );
+
+    return;
+
+  }
+
+  if(data.type === "chat"){
+
+    receiveChat(
+      state.players[seat]?.name ||
+      "Player",
+      data.message
+    );
+
+    return;
+
+  }
+
+}
+
+/* =========================================================
+   JOIN ROOM
+========================================================= */
+
+$("join").onclick =
+  joinRoom;
+
+async function joinRoom(){
+
+  myName =
+    $("username")
+      .value
+      .trim()
+      .slice(0,20);
+
+  if(!myName){
+
+    homeStatus(
+      "Enter a username first.",
+      "error"
+    );
+
+    return;
+
+  }
+
+  const room =
+    new URLSearchParams(
+      location.search
+    ).get("room");
+
+  if(!room){
+
+    homeStatus(
+      "No room was specified.",
+      "error"
+    );
+
+    return;
+
+  }
+
+  $("join").disabled = true;
+
+  homeStatus(
+    "Connecting to room..."
+  );
+
+  try{
+
+    isHost = false;
+
+    await makePeer();
+
+    hostId = room;
+
+    hostConnection =
+      peer.connect(
+        hostId,
+        {
+          reliable:true,
+          serialization:"json"
+        }
+      );
+
+    hostConnection.on(
+      "open",
+      ()=>{
+
+        console.log(
+          "Connected to host."
+        );
+
+        hostConnection.send({
+
+          type:"hello",
+
+          name:myName
+
+        });
+
+        homeStatus(
+          "Connected.",
+          "success"
+        );
+
+      }
+    );
+
+    hostConnection.on(
+      "data",
+      clientMessage
+    );
+
+    hostConnection.on(
+      "close",
+      ()=>{
+
+        if(
+          state &&
+          state.started
+        ){
+
+          state.ended = true;
+
+          state.endReason =
+            "Host disconnected.";
+
+          renderEverything();
+
+          alert(
+            "The host disconnected. The match has ended."
+          );
+
+        }else{
+
+          homeStatus(
+            "The host disconnected.",
+            "error"
+          );
+
+        }
+
+      }
+    );
+
+    hostConnection.on(
+      "error",
+      error=>{
+
+        console.error(
+          "Host connection error:",
+          error
+        );
+
+        $("join").disabled = false;
+
+        homeStatus(
+          "Could not connect to the room.",
+          "error"
+        );
+
+      }
+    );
+
+  }catch(error){
+
+    console.error(error);
+
+    $("join").disabled = false;
+
+    homeStatus(
+      "Could not connect to the room.",
+      "error"
+    );
+
+  }
+
+}
+
+/* =========================================================
+   CLIENT MESSAGE
+========================================================= */
 
 function clientMessage(data){
 
   if(!data)return;
 
-  if(data.type==="welcome"){
+  if(data.type === "welcome"){
 
-    mySeat=data.seat;
+    mySeat = data.seat;
 
-    state=data.state;
+    state = data.state;
 
-    showLobby();
+    console.log(
+      "Assigned seat:",
+      mySeat
+    );
+
+    showOnly(
+      state.started
+      ? "game"
+      : "lobby"
+    );
 
     renderLobby();
 
-    return;
-  }
-
-  if(data.type==="state"){
-
-    state=data.state;
-
     if(state.started){
 
-      showGame();
-
-    }else{
-
-      showLobby();
+      renderEverything();
 
     }
 
-    renderEverything();
-
     return;
+
   }
 
-  if(data.type==="chat"){
+  if(data.type === "state"){
+
+    state = data.state;
+
+    if(state.started){
+
+      showOnly("game");
+
+      renderEverything();
+
+    }else{
+
+      showOnly("lobby");
+
+      renderLobby();
+
+    }
+
+    return;
+
+  }
+
+  if(data.type === "chat"){
 
     renderChatMessage(
       data.name,
@@ -1188,11 +1646,17 @@ function clientMessage(data){
     );
 
     return;
+
   }
 
-  if(data.type==="error"){
+  if(data.type === "error"){
 
-    alert(data.message);
+    alert(
+      data.message ||
+      "Server error."
+    );
+
+    return;
 
   }
 
@@ -1200,7 +1664,7 @@ function clientMessage(data){
 
 /* =========================================================
    NETWORK
-   ========================================================= */
+========================================================= */
 
 function sendHost(message){
 
@@ -1209,7 +1673,18 @@ function sendHost(message){
     hostConnection.open
   ){
 
-    hostConnection.send(message);
+    try{
+
+      hostConnection.send(message);
+
+    }catch(error){
+
+      console.error(
+        "Could not send to host:",
+        error
+      );
+
+    }
 
   }
 
@@ -1217,21 +1692,43 @@ function sendHost(message){
 
 function broadcast(message){
 
-  for(const seat in connections){
+  if(!isHost)return;
 
-    const conn=connections[seat];
+  for(
+    const seat in connections
+  ){
 
-    if(conn && conn.open){
+    const conn =
+      connections[seat];
+
+    if(
+      conn &&
+      conn.open
+    ){
 
       try{
+
         conn.send(message);
-      }catch(e){}
+
+      }catch(error){
+
+        console.warn(
+          "Broadcast failed:",
+          seat,
+          error
+        );
+
+      }
 
     }
 
   }
 
 }
+
+/* =========================================================
+   STATE BROADCAST
+========================================================= */
 
 function broadcastState(){
 
@@ -1242,70 +1739,80 @@ function broadcastState(){
     state
   });
 
-}
-
-/* =========================================================
-   SHOW SCREENS
-   ========================================================= */
-
-function showLobby(){
-
-  $("home").classList.add("hidden");
-  $("game").classList.add("hidden");
-  $("lobby").classList.remove("hidden");
-
-}
-
-function showGame(){
-
-  $("home").classList.add("hidden");
-  $("lobby").classList.add("hidden");
-  $("game").classList.remove("hidden");
+  lastHostBroadcast =
+    Date.now();
 
 }
 
 /* =========================================================
    LOBBY
-   ========================================================= */
+========================================================= */
 
 function renderLobby(){
 
   if(!state)return;
 
-  $("lobbyTime").value=state.time;
+  $("lobbyTime").value =
+    String(state.time);
 
-  const seats=$("seats");
+  const seats =
+    $("seats");
 
-  seats.innerHTML="";
-
-  const roles=[
-    "Board 1 — White",
-    "Board 1 — Black",
-    "Board 2 — White",
-    "Board 2 — Black"
-  ];
+  seats.innerHTML = "";
 
   for(let i=0;i<4;i++){
 
-    const player=state.players[i];
+    const player =
+      state.players[i];
 
-    const div=document.createElement("div");
+    const div =
+      document.createElement("div");
 
-    div.className=
-      "seat "+
-      (state.teams[i]===1?"team1":"team2");
+    div.className =
+      "seat " +
+      (
+        state.teams[i] === 1
+        ? "team1"
+        : "team2"
+      );
 
-    div.innerHTML=`
+    const connected =
+      player &&
+      player.connected !== false;
 
-      <b>${roles[i]}</b>
+    div.innerHTML = `
+
+      <b>
+        ${ROLES[i]}
+      </b>
 
       <div class="seat-name">
+
         ${
           player
-          ?escape(player.name)
-          :"Waiting..."
+          ? escapeHTML(player.name)
+          : "Waiting..."
         }
+
       </div>
+
+      ${
+        player
+        ? `
+          <div class="status">
+            <span class="
+              connection-dot
+              ${connected ? "" : "disconnected"}
+            "></span>
+            ${
+              connected
+              ? "Connected"
+              : "Disconnected"
+            }
+          </div>
+        `
+        : ""
+      }
 
       <div class="status">
         Team ${state.teams[i]}
@@ -1319,41 +1826,52 @@ function renderLobby(){
 
   renderTeamControls();
 
-  const full=
-    state.players.every(p=>p!==null);
+  const full =
+    state.players.every(
+      p=>p !== null
+    );
 
-  const team1=
-    state.teams.filter(x=>x===1).length;
+  const team1 =
+    state.teams.filter(
+      x=>x===1
+    ).length;
 
-  const team2=
-    state.teams.filter(x=>x===2).length;
+  const team2 =
+    state.teams.filter(
+      x=>x===2
+    ).length;
 
-  $("start").disabled=!(
+  $("start").disabled = !(
     isHost &&
     full &&
-    team1===2 &&
-    team2===2 &&
+    team1 === 2 &&
+    team2 === 2 &&
     !state.started
   );
 
   if(!full){
 
-    $("lobbyStatus").textContent=
-      "Waiting for "+
-      state.players.filter(p=>!p).length+
+    $("lobbyStatus").textContent =
+      "Waiting for " +
+      state.players.filter(
+        p=>!p
+      ).length +
       " more player(s).";
 
-  }else if(team1!==2||team2!==2){
+  }else if(
+    team1 !== 2 ||
+    team2 !== 2
+  ){
 
-    $("lobbyStatus").textContent=
+    $("lobbyStatus").textContent =
       "Each team needs exactly two players.";
 
   }else{
 
-    $("lobbyStatus").textContent=
+    $("lobbyStatus").textContent =
       isHost
-      ?"Everyone is ready."
-      :"Waiting for the host.";
+      ? "Everyone is ready."
+      : "Waiting for the host to start.";
 
   }
 
@@ -1361,50 +1879,58 @@ function renderLobby(){
 
 /* =========================================================
    TEAM CONTROLS
-   ========================================================= */
+========================================================= */
 
 function renderTeamControls(){
 
-  const box=$("teamControls");
+  const box =
+    $("teamControls");
 
-  box.innerHTML="";
+  box.innerHTML = "";
 
   if(!isHost){
 
-    box.innerHTML=
+    box.innerHTML =
       `<p class="status">
         The host chooses the teams.
       </p>`;
 
     return;
+
   }
 
   for(let i=0;i<4;i++){
 
     if(!state.players[i])continue;
 
-    const row=document.createElement("div");
+    const row =
+      document.createElement("div");
 
-    row.style.marginBottom="8px";
+    row.style.marginBottom =
+      "8px";
 
-    const label=document.createElement("span");
+    const label =
+      document.createElement("span");
 
-    label.textContent=
-      state.players[i].name+
+    label.textContent =
+      state.players[i].name +
       " — ";
 
-    const select=document.createElement("select");
+    const select =
+      document.createElement("select");
 
-    select.innerHTML=`
+    select.innerHTML = `
       <option value="1">Team 1</option>
       <option value="2">Team 2</option>
     `;
 
-    select.value=state.teams[i];
+    select.value =
+      String(state.teams[i]);
 
-    select.onchange=()=>{
+    select.onchange = ()=>{
 
-      state.teams[i]=Number(select.value);
+      state.teams[i] =
+        Number(select.value);
 
       broadcastState();
 
@@ -1413,1493 +1939,3 @@ function renderTeamControls(){
     };
 
     row.appendChild(label);
-    row.appendChild(select);
-
-    box.appendChild(row);
-
-  }
-
-}
-
-/* =========================================================
-   TIME CONTROL
-   ========================================================= */
-
-$("lobbyTime").onchange=()=>{
-
-  if(!isHost||state.started)return;
-
-  state.time=
-    Number($("lobbyTime").value);
-
-  state.clocks=[
-    [state.time*1000,state.time*1000],
-    [state.time*1000,state.time*1000]
-  ];
-
-  state.clockAt=Date.now();
-
-  broadcastState();
-
-  renderLobby();
-
-};
-
-/* =========================================================
-   START GAME
-   ========================================================= */
-
-$("start").onclick=()=>{
-
-  if(!isHost)return;
-
-  if(state.players.some(p=>!p)){
-
-    alert("Four players are required.");
-
-    return;
-  }
-
-  if(
-    state.teams.filter(x=>x===1).length!==2 ||
-    state.teams.filter(x=>x===2).length!==2
-  ){
-
-    alert(
-      "Each team needs exactly two players."
-    );
-
-    return;
-  }
-
-  state.started=true;
-  state.ended=false;
-
-  state.boards=[
-    {fen:START_FEN},
-    {fen:START_FEN}
-  ];
-
-  state.pockets=[
-    {p:0,n:0,b:0,r:0,q:0},
-    {p:0,n:0,b:0,r:0,q:0},
-    {p:0,n:0,b:0,r:0,q:0},
-    {p:0,n:0,b:0,r:0,q:0}
-  ];
-
-  state.clocks=[
-    [state.time*1000,state.time*1000],
-    [state.time*1000,state.time*1000]
-  ];
-
-  state.clockAt=Date.now();
-
-  broadcastState();
-
-  showGame();
-
-  renderEverything();
-
-  addSystemMessage(
-    "The match has started!"
-  );
-
-};
-
-/* =========================================================
-   FIND TEAMMATE
-   ========================================================= */
-
-function teammateOf(seat){
-
-  const team=state.teams[seat];
-
-  for(let i=0;i<4;i++){
-
-    if(
-      i!==seat &&
-      state.players[i] &&
-      state.teams[i]===team
-    ){
-
-      return i;
-
-    }
-
-  }
-
-  return -1;
-}
-
-/* =========================================================
-   CHESS INSTANCES
-   ========================================================= */
-
-function rebuildGames(){
-
-  games=[
-    new Chess(state.boards[0].fen),
-    new Chess(state.boards[1].fen)
-  ];
-
-}
-
-/* =========================================================
-   RENDER EVERYTHING
-   ========================================================= */
-
-function renderEverything(){
-
-  if(!state||!state.started)return;
-
-  rebuildGames();
-
-  renderBoard(0);
-  renderBoard(1);
-
-  renderPocket(0);
-  renderPocket(1);
-
-  renderPlayers();
-
-  renderClocks();
-
-  renderGameStatus();
-
-}
-
-/* =========================================================
-   BOARD
-   ========================================================= */
-
-function renderBoard(boardIndex){
-
-  const board=$("board"+(boardIndex+1));
-
-  board.innerHTML="";
-
-  const chess=games[boardIndex];
-
-  if(!chess)return;
-
-  const whiteSeat=
-    boardIndex===0?0:2;
-
-  const blackSeat=
-    boardIndex===0?1:3;
-
-  const myColor=
-    mySeat===whiteSeat
-    ?"w"
-    :mySeat===blackSeat
-    ?"b"
-    :null;
-
-  const orientation=
-    myColor==="b"
-    ?"black"
-    :"white";
-
-  const ranks=
-    orientation==="white"
-    ?[8,7,6,5,4,3,2,1]
-    :[1,2,3,4,5,6,7,8];
-
-  const files=
-    orientation==="white"
-    ?FILES
-    :[...FILES].reverse();
-
-  let targets=[];
-
-  if(
-    selectedSquare &&
-    selectedSquare.board===boardIndex
-  ){
-
-    try{
-
-      targets=chess.moves({
-        square:selectedSquare.square,
-        verbose:true
-      });
-
-    }catch(e){
-
-      targets=[];
-
-    }
-
-  }
-
-  for(const rank of ranks){
-
-    for(const file of files){
-
-      const square=file+rank;
-
-      const piece=chess.get(square);
-
-      const div=document.createElement("div");
-
-      div.className=
-        "square "+
-        (
-          (FILES.indexOf(file)+rank)%2===1
-          ?"light"
-          :"dark"
-        );
-
-      if(
-        selectedSquare &&
-        selectedSquare.board===boardIndex &&
-        selectedSquare.square===square
-      ){
-
-        div.classList.add("selected");
-
-      }
-
-      const target=
-        targets.find(m=>m.to===square);
-
-      if(target){
-
-        if(piece){
-          div.classList.add("capture");
-        }else{
-          div.classList.add("target");
-        }
-
-      }
-
-      if(
-        selectedPocket &&
-        selectedPocket.board===boardIndex &&
-        !piece
-      ){
-
-        div.classList.add("target");
-
-      }
-
-      if(piece){
-
-        const span=document.createElement("span");
-
-        span.className=
-          "piece "+
-          (
-            piece.color==="w"
-            ?"whitepiece"
-            :"blackpiece"
-          );
-
-        span.textContent=PIECES[piece.type];
-
-        div.appendChild(span);
-
-      }
-
-      div.onclick=()=>{
-
-        squareClicked(
-          boardIndex,
-          square,
-          piece
-        );
-
-      };
-
-      board.appendChild(div);
-
-    }
-
-  }
-
-  const turn=chess.turn();
-
-  const canPlay=
-    !state.ended &&
-    (
-      mySeat===whiteSeat ||
-      mySeat===blackSeat
-    );
-
-  const myTurn=
-    canPlay &&
-    (
-      (turn==="w"&&mySeat===whiteSeat) ||
-      (turn==="b"&&mySeat===blackSeat)
-    );
-
-  $("turn"+(boardIndex+1)).textContent=
-    myTurn
-    ?"YOUR TURN"
-    :(turn==="w"?"White to move":"Black to move");
-
-}
-
-/* =========================================================
-   BOARD CLICK
-   ========================================================= */
-
-function squareClicked(board,square,piece){
-
-  if(state.ended)return;
-
-  const whiteSeat=
-    board===0?0:2;
-
-  const blackSeat=
-    board===0?1:3;
-
-  const myColor=
-    mySeat===whiteSeat
-    ?"w"
-    :mySeat===blackSeat
-    ?"b"
-    :null;
-
-  if(!myColor)return;
-
-  const chess=games[board];
-
-  /* DROP */
-
-  if(
-    selectedPocket &&
-    selectedPocket.board===board
-  ){
-
-    sendAction({
-
-      type:"drop",
-
-      board,
-
-      square,
-
-      piece:selectedPocket.type
-
-    });
-
-    selectedPocket=null;
-
-    renderEverything();
-
-    return;
-
-  }
-
-  /* NORMAL MOVE */
-
-  if(selectedSquare){
-
-    if(
-      selectedSquare.board===board &&
-      selectedSquare.square===square
-    ){
-
-      selectedSquare=null;
-
-      renderEverything();
-
-      return;
-
-    }
-
-    if(selectedSquare.board===board){
-
-      let moves=[];
-
-      try{
-
-        moves=chess.moves({
-          square:selectedSquare.square,
-          verbose:true
-        });
-
-      }catch(e){}
-
-      const move=
-        moves.find(m=>m.to===square);
-
-      if(move){
-
-        if(move.promotion){
-
-          promotion={
-            board,
-            from:selectedSquare.square,
-            to:square
-          };
-
-          $("promotion").classList.remove("hidden");
-
-          return;
-
-        }
-
-        sendAction({
-
-          type:"move",
-
-          board,
-
-          from:selectedSquare.square,
-
-          to:square
-
-        });
-
-        selectedSquare=null;
-
-        return;
-
-      }
-
-    }
-
-  }
-
-  /* SELECT PIECE */
-
-  if(
-    piece &&
-    piece.color===myColor &&
-    chess.turn()===myColor
-  ){
-
-    selectedSquare={
-      board,
-      square
-    };
-
-    selectedPocket=null;
-
-    renderEverything();
-
-  }
-
-}
-
-/* =========================================================
-   POCKETS
-   ========================================================= */
-
-function renderPocket(board){
-
-  const top=$("pocket"+(board+1)+"top");
-  const bottom=$("pocket"+(board+1)+"bottom");
-
-  top.innerHTML="";
-  bottom.innerHTML="";
-
-  /*
-    Only the player actually sitting at this board can
-    use this board's drop interface.
-  */
-
-  const boardSeats=
-    board===0
-    ?[0,1]
-    :[2,3];
-
-  if(!boardSeats.includes(mySeat)){
-
-    return;
-
-  }
-
-  /*
-    CRITICAL:
-
-    state.pockets[mySeat] is the ONLY pocket this player
-    can use.
-
-    It contains pieces captured by their teammate.
-  */
-
-  const pocket=
-    state.pockets[mySeat];
-
-  const label=document.createElement("div");
-
-  label.className="pocket-label";
-
-  const teammate=
-    teammateOf(mySeat);
-
-  label.textContent=
-    teammate>=0
-    ?"Pieces from your teammate's captures:"
-    :"Your available pieces:";
-
-  bottom.appendChild(label);
-
-  const types=["q","r","b","n","p"];
-
-  for(const type of types){
-
-    const count=
-      Number(pocket[type]||0);
-
-    if(count<=0)continue;
-
-    const button=
-      document.createElement("button");
-
-    button.className="pocket-piece";
-
-    if(
-      selectedPocket &&
-      selectedPocket.board===board &&
-      selectedPocket.type===type
-    ){
-
-      button.classList.add("selected");
-
-    }
-
-    button.innerHTML=
-      PIECES[type]+
-      `<span class="count">${count}</span>`;
-
-    button.onclick=()=>{
-
-      selectedSquare=null;
-
-      if(
-        selectedPocket &&
-        selectedPocket.board===board &&
-        selectedPocket.type===type
-      ){
-
-        selectedPocket=null;
-
-      }else{
-
-        selectedPocket={
-          board,
-          type
-        };
-
-      }
-
-      renderEverything();
-
-    };
-
-    bottom.appendChild(button);
-
-  }
-
-}
-
-/* =========================================================
-   ACTION ROUTER
-   ========================================================= */
-
-function sendAction(action){
-
-  if(isHost){
-
-    performAction(action,mySeat);
-
-  }else{
-
-    sendHost({
-      type:"action",
-      action
-    });
-
-  }
-
-}
-
-/* =========================================================
-   HOST ACTION
-   ========================================================= */
-
-function performAction(action,seat){
-
-  if(
-    !isHost ||
-    !state ||
-    !state.started ||
-    state.ended
-  )return;
-
-  updateClocks();
-
-  if(state.ended){
-
-    broadcastState();
-    renderEverything();
-
-    return;
-
-  }
-
-  if(action.type==="move"){
-
-    hostMove(action,seat);
-
-  }else if(action.type==="drop"){
-
-    hostDrop(action,seat);
-
-  }
-
-  state.clockAt=Date.now();
-
-  broadcastState();
-
-  renderEverything();
-
-}
-
-/* =========================================================
-   NORMAL MOVE
-   ========================================================= */
-
-function hostMove(action,seat){
-
-  const board=Number(action.board);
-
-  if(board!==0&&board!==1)return;
-
-  const whiteSeat=
-    board===0?0:2;
-
-  const blackSeat=
-    board===0?1:3;
-
-  const color=
-    seat===whiteSeat
-    ?"w"
-    :seat===blackSeat
-    ?"b"
-    :null;
-
-  if(!color)return;
-
-  const chess=
-    new Chess(state.boards[board].fen);
-
-  if(chess.turn()!==color)return;
-
-  const from=String(action.from||"");
-  const to=String(action.to||"");
-
-  if(
-    !/^[a-h][1-8]$/.test(from) ||
-    !/^[a-h][1-8]$/.test(to)
-  )return;
-
-  const piece=chess.get(from);
-
-  if(!piece||piece.color!==color)return;
-
-  let legal;
-
-  try{
-
-    legal=chess.moves({
-      square:from,
-      verbose:true
-    });
-
-  }catch(e){
-
-    return;
-
-  }
-
-  const candidate=
-    legal.find(m=>m.to===to);
-
-  if(!candidate)return;
-
-  let move;
-
-  try{
-
-    move=chess.move({
-
-      from,
-      to,
-
-      promotion:
-        candidate.promotion
-        ?(
-          ["q","r","b","n"].includes(action.promotion)
-          ?action.promotion
-          :"q"
-        )
-        :undefined
-
-    });
-
-  }catch(e){
-
-    return;
-
-  }
-
-  if(!move)return;
-
-  /*
-    BUGHOUSE CAPTURE TRANSFER
-
-    The captured piece NEVER goes into the capturer's
-    inventory.
-
-    It goes directly into the teammate's inventory.
-  */
-
-  if(move.captured){
-
-    const teammate=
-      teammateOf(seat);
-
-    if(teammate>=0){
-
-      state.pockets[teammate][move.captured]++;
-
-    }
-
-  }
-
-  state.boards[board].fen=
-    chess.fen();
-
-  if(chess.isGameOver()){
-
-    state.ended=true;
-
-  }
-
-}
-
-/* =========================================================
-   DROP
-   ========================================================= */
-
-function hostDrop(action,seat){
-
-  const board=Number(action.board);
-
-  if(board!==0&&board!==1)return;
-
-  const whiteSeat=
-    board===0?0:2;
-
-  const blackSeat=
-    board===0?1:3;
-
-  const color=
-    seat===whiteSeat
-    ?"w"
-    :seat===blackSeat
-    ?"b"
-    :null;
-
-  if(!color)return;
-
-  const type=String(action.piece||"");
-
-  if(!["p","n","b","r","q"].includes(type))
-    return;
-
-  /*
-    THE PLAYER USES THEIR OWN POCKET.
-
-    That pocket contains pieces captured by their
-    teammate.
-  */
-
-  const pocket=
-    state.pockets[seat];
-
-  if(!pocket)return;
-
-  if((pocket[type]||0)<=0)return;
-
-  const square=
-    String(action.square||"");
-
-  if(!/^[a-h][1-8]$/.test(square))
-    return;
-
-  /*
-    Pawns cannot be dropped on first or eighth rank.
-  */
-
-  const rank=
-    Number(square[1]);
-
-  if(
-    type==="p" &&
-    (rank===1||rank===8)
-  ){
-
-    return;
-
-  }
-
-  const chess=
-    new Chess(state.boards[board].fen);
-
-  /*
-    It must be the player's turn.
-  */
-
-  if(chess.turn()!==color)
-    return;
-
-  /*
-    Square must be empty.
-  */
-
-  if(chess.get(square))
-    return;
-
-  /*
-    The requested rule says you cannot put a piece
-    onto a square where it would immediately be capturable.
-  */
-
-  const opponent=
-    color==="w"
-    ?"b"
-    :"w";
-
-  if(
-    chess.isAttacked(
-      square,
-      opponent
-    )
-  ){
-
-    return;
-
-  }
-
-  /*
-    Temporarily place the piece.
-  */
-
-  try{
-
-    if(
-      !chess.put({
-        type,
-        color
-      },square)
-    ){
-
-      return;
-
-    }
-
-  }catch(e){
-
-    return;
-
-  }
-
-  /*
-    The drop cannot leave your king in check.
-  */
-
-  let kingSquare=null;
-
-  for(const file of FILES){
-
-    for(let rank=1;rank<=8;rank++){
-
-      const sq=file+rank;
-
-      const p=chess.get(sq);
-
-      if(
-        p &&
-        p.type==="k" &&
-        p.color===color
-      ){
-
-        kingSquare=sq;
-
-      }
-
-    }
-
-  }
-
-  if(!kingSquare)
-    return;
-
-  if(
-    chess.isAttacked(
-      kingSquare,
-      opponent
-    )
-  ){
-
-    return;
-
-  }
-
-  /*
-    Drop is legal.
-
-    chess.js does not treat put() as a chess move,
-    so manually change side to move in the FEN.
-  */
-
-  const parts=
-    chess.fen().split(" ");
-
-  parts[1]=
-    color==="w"
-    ?"b"
-    :"w";
-
-  parts[3]="-";
-  parts[4]="0";
-
-  if(color==="b"){
-
-    parts[5]=
-      String(
-        Number(parts[5])+1
-      );
-
-  }
-
-  state.boards[board].fen=
-    parts.join(" ");
-
-  /*
-    Consume the teammate's captured piece.
-  */
-
-  pocket[type]--;
-
-}
-
-/* =========================================================
-   CLOCK
-   ========================================================= */
-
-function updateClocks(){
-
-  if(
-    !isHost ||
-    !state ||
-    !state.started ||
-    state.ended
-  )return;
-
-  const now=Date.now();
-
-  const elapsed=
-    now-state.clockAt;
-
-  if(elapsed<=0)return;
-
-  for(let board=0;board<2;board++){
-
-    const chess=
-      new Chess(
-        state.boards[board].fen
-      );
-
-    const side=
-      chess.turn()==="w"
-      ?0
-      :1;
-
-    state.clocks[board][side]-=
-      elapsed;
-
-    if(
-      state.clocks[board][side]<=0
-    ){
-
-      state.clocks[board][side]=0;
-
-      state.ended=true;
-
-      break;
-
-    }
-
-  }
-
-  state.clockAt=now;
-
-}
-
-/* =========================================================
-   CLOCK DISPLAY
-   ========================================================= */
-
-function renderClocks(){
-
-  if(!state||!state.started)
-    return;
-
-  if(isHost&&!state.ended)
-    updateClocks();
-
-  for(let board=0;board<2;board++){
-
-    const chess=
-      new Chess(
-        state.boards[board].fen
-      );
-
-    const whiteSeat=
-      board===0?0:2;
-
-    const blackSeat=
-      board===0?1:3;
-
-    const white=
-      state.clocks[board][0];
-
-    const black=
-      state.clocks[board][1];
-
-    $("clock"+(board+1)).innerHTML=`
-
-      <div class="
-        clock
-        ${chess.turn()==="w"?"active":""}
-        ${white<10000?"low":""}
-      ">
-        ${formatTime(white)}
-        <br>
-        <small>
-          ${escape(
-            state.players[whiteSeat]?.name||"White"
-          )}
-        </small>
-      </div>
-
-      <div class="
-        clock
-        ${chess.turn()==="b"?"active":""}
-        ${black<10000?"low":""}
-      ">
-        ${formatTime(black)}
-        <br>
-        <small>
-          ${escape(
-            state.players[blackSeat]?.name||"Black"
-          )}
-        </small>
-      </div>
-
-    `;
-
-  }
-
-}
-
-function formatTime(ms){
-
-  ms=Math.max(0,ms);
-
-  const seconds=
-    Math.ceil(ms/1000);
-
-  const minutes=
-    Math.floor(seconds/60);
-
-  const secs=
-    seconds%60;
-
-  return(
-    String(minutes).padStart(2,"0")+
-    ":"+
-    String(secs).padStart(2,"0")
-  );
-
-}
-
-/* =========================================================
-   PLAYER LIST
-   ========================================================= */
-
-function renderPlayers(){
-
-  const box=$("players");
-
-  box.innerHTML="";
-
-  const roles=[
-    "B1 White",
-    "B1 Black",
-    "B2 White",
-    "B2 Black"
-  ];
-
-  for(let i=0;i<4;i++){
-
-    const p=state.players[i];
-
-    if(!p)continue;
-
-    const div=
-      document.createElement("div");
-
-    div.className="player";
-
-    div.innerHTML=`
-
-      <span>
-        ${escape(p.name)}
-        ${i===mySeat?" <b>(you)</b>":""}
-      </span>
-
-      <span>
-        Team ${state.teams[i]}
-      </span>
-
-    `;
-
-    box.appendChild(div);
-
-  }
-
-}
-
-/* =========================================================
-   GAME STATUS
-   ========================================================= */
-
-function renderGameStatus(){
-
-  if(state.ended){
-
-    $("gameStatus").textContent=
-      "Game over.";
-
-    return;
-
-  }
-
-  const b1=
-    new Chess(
-      state.boards[0].fen
-    );
-
-  const b2=
-    new Chess(
-      state.boards[1].fen
-    );
-
-  if(b1.isCheckmate()){
-
-    $("gameStatus").textContent=
-      "Board 1 checkmate.";
-
-  }else if(b2.isCheckmate()){
-
-    $("gameStatus").textContent=
-      "Board 2 checkmate.";
-
-  }else if(b1.isCheck()){
-
-    $("gameStatus").textContent=
-      "Board 1 is in check.";
-
-  }else if(b2.isCheck()){
-
-    $("gameStatus").textContent=
-      "Board 2 is in check.";
-
-  }else{
-
-    $("gameStatus").textContent=
-      "Match in progress.";
-
-  }
-
-}
-
-/* =========================================================
-   CHAT
-   ========================================================= */
-
-function receiveChat(name,message){
-
-  name=
-    String(name||"Player")
-    .slice(0,20);
-
-  message=
-    String(message||"")
-    .trim()
-    .slice(0,250);
-
-  if(!message)return;
-
-  state.chat.push({
-    name,
-    message
-  });
-
-  if(state.chat.length>100)
-    state.chat.shift();
-
-  broadcast({
-    type:"chat",
-    name,
-    message
-  });
-
-  renderChatMessage(
-    name,
-    message
-  );
-
-}
-
-function renderChatMessage(name,message){
-
-  const box=
-    $("chatMessages");
-
-  const div=
-    document.createElement("div");
-
-  div.className="msg";
-
-  div.innerHTML=
-    "<b>"+
-    escape(name)+
-    "</b>: "+
-    escape(message);
-
-  box.appendChild(div);
-
-  box.scrollTop=
-    box.scrollHeight;
-
-}
-
-function addSystemMessage(message){
-
-  const box=
-    $("chatMessages");
-
-  const div=
-    document.createElement("div");
-
-  div.className="msg system";
-
-  div.innerHTML=
-    "<b>System:</b> "+
-    escape(message);
-
-  box.appendChild(div);
-
-}
-
-/* =========================================================
-   CHAT SEND
-   ========================================================= */
-
-$("send").onclick=sendChat;
-
-$("chatInput").addEventListener(
-  "keydown",
-  e=>{
-    if(e.key==="Enter")
-      sendChat();
-  }
-);
-
-function sendChat(){
-
-  const input=$("chatInput");
-
-  const message=
-    input.value.trim();
-
-  if(!message)return;
-
-  input.value="";
-
-  if(isHost){
-
-    receiveChat(
-      myName,
-      message
-    );
-
-  }else{
-
-    sendHost({
-      type:"chat",
-      name:myName,
-      message
-    });
-
-    renderChatMessage(
-      myName,
-      message
-    );
-
-  }
-
-}
-
-/* =========================================================
-   PROMOTION
-   ========================================================= */
-
-document
-.querySelectorAll("[data-piece]")
-.forEach(button=>{
-
-  button.onclick=()=>{
-
-    if(!promotion)return;
-
-    sendAction({
-
-      type:"move",
-
-      board:promotion.board,
-
-      from:promotion.from,
-
-      to:promotion.to,
-
-      promotion:
-        button.dataset.piece
-
-    });
-
-    promotion=null;
-
-    $("promotion")
-      .classList.add("hidden");
-
-    selectedSquare=null;
-
-  };
-
-});
-
-/* =========================================================
-   COPY ROOM LINK
-   ========================================================= */
-
-$("copy").onclick=async()=>{
-
-  try{
-
-    await navigator.clipboard.writeText(
-      $("roomLink").value
-    );
-
-    $("copy").textContent="Copied!";
-
-    setTimeout(()=>{
-      $("copy").textContent="Copy";
-    },1500);
-
-  }catch(e){
-
-    $("roomLink").select();
-
-    document.execCommand("copy");
-
-  }
-
-};
-
-/* =========================================================
-   ESCAPE HTML
-   ========================================================= */
-
-function escape(value){
-
-  return String(value??"")
-    .replaceAll("&","&amp;")
-    .replaceAll("<","&lt;")
-    .replaceAll(">","&gt;")
-    .replaceAll('"',"&quot;")
-    .replaceAll("'","&#039;");
-
-}
-
-/* =========================================================
-   STARTUP
-   ========================================================= */
-
-if(roomFromURL){
-
-  $("create").classList.add("hidden");
-  $("join").classList.remove("hidden");
-
-  homeStatus(
-    "You've been invited to a room. Enter your name and join."
-  );
-
-}else{
-
-  homeStatus("Ready.");
-
-}
-
-/* =========================================================
-   LOCAL RENDER LOOP
-   ========================================================= */
-
-setInterval(()=>{
-
-  if(
-    state &&
-    state.started &&
-    !state.ended
-  ){
-
-    renderClocks();
-
-  }
-
-},100);
-
-/* =========================================================
-   HOST CLOCK SYNCHRONIZATION
-   ========================================================= */
-
-setInterval(()=>{
-
-  if(
-    isHost &&
-    state &&
-    state.started &&
-    !state.ended
-  ){
-
-    updateClocks();
-
-    broadcastState();
-
-  }
-
-},1000);
-
-</script>
-
-</body>
-</html>
