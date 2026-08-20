@@ -6,11 +6,6 @@
 <meta name="theme-color" content="#0d1117">
 <title>Bughouse Arena</title>
 
-<!--
-  PeerJS browser build.
-  chess.js 0.10.3 is intentionally used here because it exposes
-  the Chess constructor directly in a normal browser <script>.
--->
 <script src="https://cdn.jsdelivr.net/npm/peerjs@1.5.5/dist/peerjs.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/chess.js/0.10.3/chess.js"></script>
 
@@ -267,12 +262,27 @@ header span{
   margin:0;
 }
 
+/*
+  IMPORTANT BOARD FIX
+
+  The board itself is a strict 1:1 square and BOTH
+  columns and rows are explicitly divided into eight
+  equal fractions.
+
+  Previously only the columns were explicitly defined,
+  which allowed CSS Grid's implicit rows to size
+  themselves from their contents. That caused empty
+  ranks to collapse into tiny rectangles.
+
+  Explicit 8 equal rows fixes that completely.
+*/
 .board{
   width:100%;
   max-width:600px;
-  aspect-ratio:1;
+  aspect-ratio:1 / 1;
   display:grid;
-  grid-template-columns:repeat(8,1fr);
+  grid-template-columns:repeat(8,minmax(0,1fr));
+  grid-template-rows:repeat(8,minmax(0,1fr));
   overflow:hidden;
   border-radius:6px;
   margin:auto;
@@ -283,11 +293,13 @@ header span{
 
 .square{
   position:relative;
+  width:100%;
+  height:100%;
+  min-width:0;
+  min-height:0;
   display:flex;
   justify-content:center;
   align-items:center;
-  font-size:clamp(27px,5vw,60px);
-  line-height:1;
   cursor:pointer;
 }
 
@@ -323,35 +335,25 @@ header span{
   pointer-events:none;
 }
 
+/*
+  LICHESS MERIDA PIECES
+
+  These are the SVG Merida pieces from the open-source
+  Lichess lila repository.
+
+  Using <img> rather than Unicode characters means the
+  actual Merida artwork is displayed at every board size.
+*/
 .piece{
   z-index:2;
   position:relative;
-  font-family:"DejaVu Sans","Noto Sans Symbols 2","Segoe UI Symbol",serif;
-  text-shadow:0 2px 2px rgba(0,0,0,.35);
+  width:92%;
+  height:92%;
+  object-fit:contain;
+  display:block;
   pointer-events:none;
-}
-
-.whitepiece{
-  color:#fff;
-}
-
-.blackpiece{
-  color:#111;
-}
-
-.pocket{
-  min-height:48px;
-  display:flex;
-  align-items:center;
-  gap:5px;
-  flex-wrap:wrap;
-  padding:4px 0;
-}
-
-.pocket-label{
-  color:var(--muted);
-  font-size:12px;
-  width:100%;
+  user-select:none;
+  -webkit-user-drag:none;
 }
 
 .pocket-piece{
@@ -360,8 +362,15 @@ header span{
   padding:2px;
   background:#0d1117;
   border:1px solid var(--border);
-  font-size:28px;
   position:relative;
+  display:flex;
+  justify-content:center;
+  align-items:center;
+}
+
+.pocket-piece .piece{
+  width:100%;
+  height:100%;
 }
 
 .pocket-piece.selected{
@@ -377,6 +386,22 @@ header span{
   font-size:11px;
   border-radius:4px;
   padding:1px 3px;
+  z-index:4;
+}
+
+.pocket{
+  min-height:48px;
+  display:flex;
+  align-items:center;
+  gap:5px;
+  flex-wrap:wrap;
+  padding:4px 0;
+}
+
+.pocket-label{
+  color:var(--muted);
+  font-size:12px;
+  width:100%;
 }
 
 .clock-row{
@@ -524,6 +549,12 @@ header span{
   font-size:35px;
 }
 
+.promotion-buttons button img{
+  width:100%;
+  height:100%;
+  object-fit:contain;
+}
+
 .connection-banner{
   position:fixed;
   left:50%;
@@ -603,7 +634,6 @@ header span{
   <h1>♟ <span>Bughouse Arena</span></h1>
 </header>
 
-<!-- HOME -->
 <section id="home" class="screen">
   <div class="card home">
 
@@ -642,7 +672,6 @@ header span{
   </div>
 </section>
 
-<!-- LOBBY -->
 <section id="lobby" class="screen hidden">
   <div class="card lobby">
 
@@ -695,14 +724,12 @@ header span{
   </div>
 </section>
 
-<!-- GAME -->
 <section id="game" class="screen hidden">
 
   <div class="game-layout">
 
     <div class="boards">
 
-      <!-- BOARD 1 -->
       <div class="board-card">
 
         <div class="board-title">
@@ -720,7 +747,6 @@ header span{
 
       </div>
 
-      <!-- BOARD 2 -->
       <div class="board-card">
 
         <div class="board-title">
@@ -775,7 +801,6 @@ header span{
   </div>
 </section>
 
-<!-- PROMOTION -->
 <div id="promotion" class="promotion hidden">
 
   <div class="promotion-box">
@@ -783,10 +808,10 @@ header span{
     <h2>Promote pawn</h2>
 
     <div class="promotion-buttons">
-      <button data-piece="q">♛</button>
-      <button data-piece="r">♜</button>
-      <button data-piece="b">♝</button>
-      <button data-piece="n">♞</button>
+      <button data-piece="q"></button>
+      <button data-piece="r"></button>
+      <button data-piece="b"></button>
+      <button data-piece="n"></button>
     </div>
 
   </div>
@@ -805,6 +830,28 @@ header span{
 /* -------------------------
    CONSTANTS
    ------------------------- */
+
+const PIECE_ASSET_BASE =
+  "https://raw.githubusercontent.com/lichess-org/lila/master/public/piece/merida/";
+
+const PIECE_FILES = {
+  w:{
+    p:"wP.svg",
+    n:"wN.svg",
+    b:"wB.svg",
+    r:"wR.svg",
+    q:"wQ.svg",
+    k:"wK.svg"
+  },
+  b:{
+    p:"bP.svg",
+    n:"bN.svg",
+    b:"bB.svg",
+    r:"bR.svg",
+    q:"bQ.svg",
+    k:"bK.svg"
+  }
+};
 
 const PIECES = {
   p:"♟",
@@ -826,17 +873,6 @@ const ROLE_NAMES = [
   "Board 2 — White",
   "Board 2 — Black"
 ];
-
-/*
-  Seat layout:
-
-  0 = Board 1 White
-  1 = Board 1 Black
-  2 = Board 2 White
-  3 = Board 2 Black
-
-  Team assignments can be changed by the host.
-*/
 
 /* -------------------------
    GLOBAL STATE
@@ -875,6 +911,48 @@ const roomFromURL = params.get("room");
 const $ = id => document.getElementById(id);
 
 /* -------------------------
+   PIECE HELPERS
+   ------------------------- */
+
+function pieceImageURL(color,type){
+  return PIECE_ASSET_BASE +
+    PIECE_FILES[color][type];
+}
+
+function createPieceImage(color,type,className="piece"){
+
+  const img =
+    document.createElement("img");
+
+  img.className = className;
+
+  img.src =
+    pieceImageURL(color,type);
+
+  img.alt =
+    color === "w"
+      ? "White " + type
+      : "Black " + type;
+
+  img.draggable = false;
+
+  img.onerror = ()=>{
+    /*
+      If the external SVG ever becomes unavailable,
+      fall back to the Unicode character instead of
+      leaving an invisible chess piece.
+    */
+    img.replaceWith(
+      document.createTextNode(
+        PIECES[type]
+      )
+    );
+  };
+
+  return img;
+}
+
+/* -------------------------
    SAFETY
    ------------------------- */
 
@@ -910,7 +988,7 @@ function setBanner(text, cls=""){
 }
 
 /* -------------------------
-   VALIDATE CHESS.JS
+   VERIFY LIBRARIES
    ------------------------- */
 
 function verifyLibraries(){
@@ -973,24 +1051,12 @@ function createState(seconds){
       }
     ],
 
-    /*
-      pockets[seat] belongs to that seat.
-
-      When seat A captures a piece, the piece goes into
-      the pocket of A's teammate.
-    */
-
     pockets:[
       {p:0,n:0,b:0,r:0,q:0},
       {p:0,n:0,b:0,r:0,q:0},
       {p:0,n:0,b:0,r:0,q:0},
       {p:0,n:0,b:0,r:0,q:0}
     ],
-
-    /*
-      clocks[board][0] = White
-      clocks[board][1] = Black
-    */
 
     clocks:[
       [ms,ms],
@@ -1191,11 +1257,6 @@ $("create").addEventListener("click",async()=>{
       connected:true
     };
 
-    /*
-      The host must start accepting connections BEFORE
-      guests attempt to join.
-    */
-
     peer.on("connection",hostAccept);
 
     const roomURL =
@@ -1271,10 +1332,6 @@ function hostAccept(conn){
 
   if(!isHost || !state)return;
 
-  /*
-    Reject after four players.
-  */
-
   const freeSeat = findFreeSeat();
 
   if(freeSeat === -1){
@@ -1300,11 +1357,6 @@ function hostAccept(conn){
   }
 
   conn.on("open",()=>{
-
-    /*
-      Re-check because another connection could have filled
-      the seat while this connection was opening.
-    */
 
     const seat = findFreeSeat();
 
@@ -1349,10 +1401,6 @@ function hostAccept(conn){
 
     });
 
-    /*
-      Send the seat and current state.
-    */
-
     try{
 
       conn.send({
@@ -1396,8 +1444,10 @@ function findFreeSeat(){
       return i;
     }
 
-    if(state.players[i] &&
-       state.players[i].connected === false){
+    if(
+      state.players[i] &&
+      state.players[i].connected === false
+    ){
 
       return i;
 
@@ -1445,10 +1495,6 @@ function hostMessage(conn,data){
       String(data.name || "Player")
         .trim()
         .slice(0,20) || "Player";
-
-    /*
-      Prevent duplicate hello messages from corrupting state.
-    */
 
     state.players[seat] = {
       name,
@@ -1534,7 +1580,7 @@ $("join").addEventListener("click",async()=>{
 
     isHost = false;
 
-    const id = await makePeer();
+    await makePeer();
 
     hostId = roomFromURL;
 
@@ -2332,11 +2378,6 @@ function renderBoard(boardIndex){
 
       }
 
-      /*
-        A selected pocket can only be dropped on an empty
-        square. The host performs the actual validation.
-      */
-
       if(
         selectedPocket &&
         selectedPocket.board === boardIndex &&
@@ -2349,21 +2390,14 @@ function renderBoard(boardIndex){
 
       if(piece){
 
-        const span =
-          document.createElement("span");
-
-        span.className =
-          "piece " +
-          (
-            piece.color === "w"
-              ?"whitepiece"
-              :"blackpiece"
+        const img =
+          createPieceImage(
+            piece.color,
+            piece.type,
+            "piece"
           );
 
-        span.textContent =
-          PIECES[piece.type];
-
-        div.appendChild(span);
+        div.appendChild(img);
 
       }
 
@@ -2436,10 +2470,6 @@ function squareClicked(board,square,piece){
 
   if(!chess)return;
 
-  /*
-    DROP
-  */
-
   if(
     selectedPocket &&
     selectedPocket.board === board
@@ -2466,10 +2496,6 @@ function squareClicked(board,square,piece){
 
     return;
   }
-
-  /*
-    NORMAL MOVE
-  */
 
   if(selectedSquare){
 
@@ -2537,10 +2563,6 @@ function squareClicked(board,square,piece){
 
   }
 
-  /*
-    SELECT OWN PIECE
-  */
-
   if(
     piece &&
     piece.color === myColor &&
@@ -2579,11 +2601,6 @@ function renderPocket(board){
     board === 0
       ?[0,1]
       :[2,3];
-
-  /*
-    Only players actually sitting at this board get
-    the drop controls.
-  */
 
   if(!boardSeats.includes(mySeat)){
     return;
@@ -2637,9 +2654,24 @@ function renderPocket(board){
 
     }
 
-    button.innerHTML =
-      escapeHTML(PIECES[type]) +
-      `<span class="count">${count}</span>`;
+    const img =
+      createPieceImage(
+        mySeat === (board === 0 ? 0 : 2)
+          ?"w"
+          :"b",
+        type,
+        "piece"
+      );
+
+    button.appendChild(img);
+
+    const countEl =
+      document.createElement("span");
+
+    countEl.className = "count";
+    countEl.textContent = count;
+
+    button.appendChild(countEl);
 
     button.addEventListener(
       "click",
@@ -2715,10 +2747,6 @@ function performAction(action,seat){
   ){
     return;
   }
-
-  /*
-    Apply elapsed clock time before validating the move.
-  */
 
   updateClocks();
 
@@ -2876,14 +2904,6 @@ function hostMove(action,seat){
 
   if(!move)return;
 
-  /*
-    BUGHOUSE CAPTURE TRANSFER:
-
-    Capturer does NOT receive the captured piece.
-
-    The captured piece goes to the capturer's teammate.
-  */
-
   if(move.captured){
 
     const teammate =
@@ -2926,11 +2946,6 @@ function fenWithTurn(fen,color){
   }
 
   parts[1] = color;
-
-  /*
-    A drop destroys en-passant availability.
-  */
-
   parts[3] = "-";
   parts[4] = "0";
 
@@ -2995,10 +3010,6 @@ function hostDrop(action,seat){
     return;
   }
 
-  /*
-    Pawns cannot be dropped onto ranks 1 or 8.
-  */
-
   const rank =
     Number(square[1]);
 
@@ -3014,25 +3025,13 @@ function hostDrop(action,seat){
       state.boards[board].fen
     );
 
-  /*
-    It must be the player's turn.
-  */
-
   if(original.turn() !== color){
     return;
   }
 
-  /*
-    Target square must be empty.
-  */
-
   if(original.get(square)){
     return;
   }
-
-  /*
-    Build the position with the dropped piece.
-  */
 
   const afterDrop =
     new Chess(
@@ -3060,13 +3059,6 @@ function hostDrop(action,seat){
 
   }
 
-  /*
-    A drop may not leave the dropping player's king in check.
-
-    We construct a position where it is the dropping player's
-    turn and use chess.js's legal check detection.
-  */
-
   const ownTurnFen =
     fenWithTurn(
       afterDrop.fen(),
@@ -3089,15 +3081,6 @@ function hostDrop(action,seat){
   if(ownPosition.in_check()){
     return;
   }
-
-  /*
-    Bughouse-specific rule used by this application:
-
-    You cannot place a piece onto a square where the opponent
-    can immediately legally capture that newly dropped piece.
-
-    Check the opponent's legal moves after the drop.
-  */
 
   const opponent =
     color === "w" ? "b" : "w";
@@ -3147,18 +3130,8 @@ function hostDrop(action,seat){
     return;
   }
 
-  /*
-    Everything is valid.
-
-    Store the resulting position with the opponent to move.
-  */
-
   state.boards[board].fen =
     opponentFen;
-
-  /*
-    Consume the teammate-provided piece.
-  */
 
   pocket[type]--;
 
@@ -3167,11 +3140,6 @@ function hostDrop(action,seat){
   ){
     pocket[type] = 0;
   }
-
-  /*
-    A drop itself doesn't end a game in normal chess, but the
-    resulting position could theoretically be checkmate.
-  */
 
   try{
 
@@ -3209,10 +3177,6 @@ function updateClocks(){
     now - state.clockAt;
 
   if(elapsed <= 0)return;
-
-  /*
-    Prevent absurd jumps if the browser was suspended.
-  */
 
   elapsed =
     Math.min(elapsed,60000);
@@ -3266,10 +3230,6 @@ function updateClocks(){
 function renderClocks(){
 
   if(!state || !state.started)return;
-
-  /*
-    The host is authoritative.
-  */
 
   if(
     isHost &&
@@ -3518,10 +3478,6 @@ function receiveChat(name,message){
     state.chat.shift();
   }
 
-  /*
-    Send the chat to everyone except the host's own UI.
-  */
-
   broadcast({
     type:"chat",
     name:safeName,
@@ -3541,10 +3497,6 @@ function receiveChat(name,message){
 function renderChatHistory(){
 
   if(!state)return;
-
-  /*
-    Avoid rebuilding the chat every 100ms.
-  */
 
   if(
     state.chat.length === lastRenderedChatCount
@@ -3585,11 +3537,6 @@ function renderChatMessage(
 
   if(!fromHistory){
 
-    /*
-      Avoid duplicate local host messages if the state
-      render loop already contains them.
-    */
-
     if(
       state &&
       state.chat.length > 0 &&
@@ -3620,6 +3567,10 @@ function renderChatMessage(
   box.scrollTop =
     box.scrollHeight;
 }
+
+/* -------------------------
+   SYSTEM CHAT
+   ------------------------- */
 
 function addSystemMessage(message){
 
@@ -3693,13 +3644,6 @@ function sendChat(){
 
     if(sent){
 
-      /*
-        Guest immediately displays their own message.
-        The host's broadcast will not be rendered locally
-        as a duplicate because this client only receives
-        broadcast messages from the host.
-      */
-
       renderChatMessage(
         myName,
         message
@@ -3718,6 +3662,18 @@ document
   .querySelectorAll("[data-piece]")
   .forEach(button=>{
 
+    const type =
+      button.dataset.piece;
+
+    const img =
+      createPieceImage(
+        "w",
+        type,
+        "piece"
+      );
+
+    button.appendChild(img);
+
     button.addEventListener(
       "click",
       ()=>{
@@ -3733,8 +3689,7 @@ document
 
           to:promotion.to,
 
-          promotion:
-            button.dataset.piece
+          promotion:type
         });
 
         promotion = null;
@@ -3943,12 +3898,6 @@ stateBroadcastTimer =
 
         updateClocks();
 
-        /*
-          Broadcast approximately once per second.
-          This keeps remote clocks reasonably synchronized
-          without flooding PeerJS.
-        */
-
         broadcastState();
 
         if(state.ended){
@@ -3976,10 +3925,6 @@ document.addEventListener(
       state.started &&
       !state.ended
     ){
-
-      /*
-        Re-anchor the clock immediately after returning.
-      */
 
       updateClocks();
       broadcastState();
